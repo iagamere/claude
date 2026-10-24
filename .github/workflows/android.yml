@@ -1,0 +1,55 @@
+name: Android CI
+
+# Builds the debug APK and runs the JVM unit tests.
+# The project has no Gradle wrapper, so Gradle is installed by the setup-gradle action (AGP 8.5.2 needs Gradle >= 8.7).
+# The workflow finds settings.gradle.kts itself, so it works whether this folder or its parent is the repository root.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Locate the Gradle project
+        run: |
+          S=$(find . -name settings.gradle.kts -not -path '*/node_modules/*' | head -1)
+          test -n "$S" || { echo "settings.gradle.kts not found"; exit 1; }
+          echo "PROJECT_DIR=$(dirname "$S")" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+
+      - name: Build debug APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: set -o pipefail; gradle :app:assembleDebug --stacktrace 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Unit tests
+        if: always()
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: set -o pipefail; gradle :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/test.log"
+
+      - name: Upload logs, reports and APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ps4monitor-ci
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/test.log
+            ${{ runner.temp }}/build.log
+            ${{ env.PROJECT_DIR }}/app/build/reports/tests/
+            ${{ env.PROJECT_DIR }}/app/build/test-results/
+            ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
