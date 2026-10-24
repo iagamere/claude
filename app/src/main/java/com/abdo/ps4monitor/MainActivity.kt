@@ -21,8 +21,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.core.view.WindowCompat
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
@@ -49,44 +47,28 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable fun Root() {
-    val dark = when (Store.theme.intValue) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
     val ctx = LocalContext.current
-    // Phone (Material You) colours when available and enabled; otherwise a purple fallback.
-    val cs = if (Store.dynamic.value && Build.VERSION.SDK_INT >= 31) { if (dark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx) }
-             else if (dark) darkColorScheme(
-                 primary = Color(0xFF7AB8FF), onPrimary = Color(0xFF00315A), primaryContainer = Color(0xFF0B3D75), onPrimaryContainer = Color(0xFFD3E6FF),
-                 secondary = Color(0xFFB5C8E3), onSecondary = Color(0xFF1F3147), secondaryContainer = Color(0xFF2A3F5C), onSecondaryContainer = Color(0xFFD6E4FA),
-                 tertiary = Color(0xFF5EE0C1), onTertiary = Color(0xFF00382D), tertiaryContainer = Color(0xFF0B4F42), onTertiaryContainer = Color(0xFFB5F5E4),
-                 background = Color(0xFF0B1220), onBackground = Color(0xFFE3E8F2), surface = Color(0xFF0B1220), onSurface = Color(0xFFE3E8F2),
-                 surfaceVariant = Color(0xFF1C2638), onSurfaceVariant = Color(0xFFA9B4C8),
-                 surfaceContainerLowest = Color(0xFF070C16), surfaceContainerLow = Color(0xFF111A2B), surfaceContainer = Color(0xFF152033),
-                 surfaceContainerHigh = Color(0xFF1B2840), surfaceContainerHighest = Color(0xFF22314D),
-                 outline = Color(0xFF66748C), outlineVariant = Color(0xFF2B3850))
-             else lightColorScheme(
-                 primary = Color(0xFF1558D6), onPrimary = Color.White, primaryContainer = Color(0xFFD9E5FF), onPrimaryContainer = Color(0xFF001A47),
-                 secondary = Color(0xFF4B5B78), onSecondary = Color.White, secondaryContainer = Color(0xFFDDE5F5), onSecondaryContainer = Color(0xFF0E1B33),
-                 tertiary = Color(0xFF00796B), onTertiary = Color.White, tertiaryContainer = Color(0xFFC4F2E8), onTertiaryContainer = Color(0xFF00201A),
-                 background = Color(0xFFF6F8FC), onBackground = Color(0xFF121826), surface = Color(0xFFF6F8FC), onSurface = Color(0xFF121826),
-                 surfaceVariant = Color(0xFFE1E6F0), onSurfaceVariant = Color(0xFF4A5468),
-                 surfaceContainerLowest = Color.White, surfaceContainerLow = Color.White, surfaceContainer = Color(0xFFEDF1F8),
-                 surfaceContainerHigh = Color(0xFFE6EBF4), surfaceContainerHighest = Color(0xFFDFE5F0),
-                 outline = Color(0xFF76809A), outlineVariant = Color(0xFFC8D0E0))
+    val mode = ThemeEngine.mode
+    val sysDark = isSystemInDarkTheme()
+    val dark = when (Store.theme.intValue) { 1 -> false; 2 -> true; else -> sysDark }
+    // App default mode keeps the old Appearance options (system / light / dark, phone colours); presets, profiles and the game theme are always dark.
+    val legacy = mode == ThemeMode.DEFAULT && (Store.theme.intValue == 1 || (Store.dynamic.value && Build.VERSION.SDK_INT >= 31) || (Store.theme.intValue == 0 && !sysDark))
+    val appTheme = ThemeEngine.base
+    val cs = when {
+        legacy && Store.dynamic.value && Build.VERSION.SDK_INT >= 31 -> if (dark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
+        legacy && !dark -> lightColorScheme(primary = Color(0xFF5B3FD6), secondary = Color(0xFF3A5BA0), tertiary = Color(0xFF7D5260))
+        else -> ThemeEngine.scheme(appTheme)
+    }
+    val lightUi = legacy && !dark
     val view = LocalView.current
     SideEffect {
         val w = (view.context as? Activity)?.window ?: return@SideEffect
         w.statusBarColor = cs.surface.toArgb(); w.navigationBarColor = cs.surfaceContainer.toArgb()
-        WindowCompat.getInsetsController(w, view).apply { isAppearanceLightStatusBars = !dark; isAppearanceLightNavigationBars = !dark }
+        WindowCompat.getInsetsController(w, view).apply { isAppearanceLightStatusBars = lightUi; isAppearanceLightNavigationBars = lightUi }
     }
-    val shapes = Shapes(small = RoundedCornerShape(12.dp), medium = RoundedCornerShape(18.dp), large = RoundedCornerShape(24.dp), extraLarge = RoundedCornerShape(32.dp))
-    val base = Typography()
-    val typo = base.copy(
-        headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.Bold),
-        titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
-        titleMedium = base.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-        labelLarge = base.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-        labelMedium = base.labelMedium.copy(fontWeight = FontWeight.Medium))
-    CompositionLocalProvider(LocalLayoutDirection provides if (Lang.isAr) LayoutDirection.Rtl else LayoutDirection.Ltr) {
-        MaterialTheme(colorScheme = cs, shapes = shapes, typography = typo) { Surface(Modifier.fillMaxSize(), color = cs.surface) { AppNav(); LaunchedEffect(Unit) { Tour.startIfFirstRun() }; TourOverlay() } }
+    val shapes = Shapes(small = RoundedCornerShape(10.dp), medium = RoundedCornerShape(14.dp), large = RoundedCornerShape(18.dp), extraLarge = RoundedCornerShape(24.dp))
+    CompositionLocalProvider(LocalLayoutDirection provides if (Lang.isAr) LayoutDirection.Rtl else LayoutDirection.Ltr, LocalTokens provides ThemeEngine.tokens(appTheme)) {
+        MaterialTheme(colorScheme = cs, shapes = shapes) { Surface(Modifier.fillMaxSize(), color = cs.surface) { AppNav(); LaunchedEffect(Unit) { Tour.startIfFirstRun() }; TourOverlay() } }
     }
 }
 
@@ -103,7 +85,7 @@ private val TABS = listOf(Triple("home", R.drawable.ic_home, "Home" to "الرئ
     Scaffold(bottomBar = {
         if (topLevel) NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 0.dp) {
             TABS.forEach { (r, icon, label) ->
-                NavigationBarItem(selected = route == r, label = { Lbl(tr(label.first, label.second), style = MaterialTheme.typography.labelMedium) },
+                NavigationBarItem(selected = route == r, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary, selectedTextColor = MaterialTheme.colorScheme.primary, indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f), unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant), label = { Lbl(tr(label.first, label.second), style = MaterialTheme.typography.labelMedium) },
                     icon = { BadgedBox(badge = { if (r == "downloads" && activeCount > 0) Badge { Text("$activeCount") } }) { Ico(icon) } },
                     onClick = { nav.navigate(r) { popUpTo(nav.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true } })
             }
@@ -122,6 +104,7 @@ private val TABS = listOf(Triple("home", R.drawable.ic_home, "Home" to "الرئ
             composable("settings/ps4s") { Ps4ListScreen(nav) }
             composable("settings/ps4/{id}", listOf(navArgument("id") { type = NavType.StringType })) { Ps4EditScreen(it.arguments?.getString("id").orEmpty(), nav) }
             composable("settings/server") { ServerScreen(nav) }
+            composable("settings/theme") { ThemeSettingsScreen(nav) }
             composable("settings/advanced") { AdvancedScreen(nav) }
             composable("settings/log") { LogScreen(nav) }
         }

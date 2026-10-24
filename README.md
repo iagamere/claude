@@ -1,3 +1,13 @@
+# PS4 Download Monitor 6.1.0 (UI redesign, not compiled)
+
+## Theme system
+- `Theme.kt`: one token set (`AppTheme`) shared by 9 built-in presets, user profiles and game-generated themes; mapped to a Material colour scheme in `Root()` so every screen follows it. Modes: Game theme (dynamic), Preset, Custom, App default. Profiles are stored as JSON in the existing `app` SharedPreferences (`th_*` keys). Imported/exported themes are validated hex-by-hex and capped in size. Colours are pushed to readable contrast on save (`sanitize`).
+- Game theme: the cover (icon0.png) is sampled at 48x48 once per game with the existing `CoverPalette.analyze`, turned into background / surface / accent / second accent / text, and cached in memory.
+- `ThemeUi.kt`: Settings > Theme (mode, presets, profiles, editor with HEX + HSL sliders, live isolated preview, save / discard / restore preset values, duplicate, delete with confirmation, import / export).
+- Redesigned: Home dashboard, game page (hero, segmented tabs, account selector, trophy overview, trophy cards), shared Panel / bottom bar / download card. Other screens inherit colours, shapes and Panel through the theme but keep their layouts.
+- "Use phone colours" now defaults to off (it only applies in App default mode).
+- NOT compiled (no Android SDK here): only a parse-level check was run.
+
 # PS4 Download Monitor 6.0.0 (v6)
 
 ## 6.0.0 speed
