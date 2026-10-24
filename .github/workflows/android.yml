@@ -1,64 +1,86 @@
-name: Android CI
+name: Build PS4Monitor APK
 
-# Builds the debug APK and runs the JVM unit tests.
-# The project has no Gradle wrapper, so Gradle is installed by the setup-gradle action (AGP 8.5.2 needs Gradle >= 8.7).
-# The workflow finds settings.gradle.kts itself, so it works whether this folder or its parent is the repository root.
 on:
   push:
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout source
+        uses: actions/checkout@v4
 
       - name: Locate the Gradle project
+        shell: bash
         run: |
           S=$(find . -name settings.gradle.kts -not -path '*/node_modules/*' | head -1)
           test -n "$S" || { echo "settings.gradle.kts not found"; exit 1; }
           echo "PROJECT_DIR=$(dirname "$S")" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-java@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: '17'
 
-      # Install explicit SDK packages. The legacy package name `tools` is no longer available.
-      - uses: android-actions/setup-android@v3
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
         with:
           packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.9
+          gradle-version: '8.9'
 
       - name: Build debug APK
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: set -o pipefail; gradle :app:assembleDebug --stacktrace 2>&1 | tee "$RUNNER_TEMP/build.log"
-
-      - name: Verify APK was produced
-        if: success()
+        shell: bash
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          test -s app/build/outputs/apk/debug/app-debug.apk || { echo "Debug APK was not produced"; exit 1; }
+          set -o pipefail
+          gradle :app:assembleDebug --stacktrace 2>&1 | tee "$RUNNER_TEMP/build.log"
 
-      - name: Unit tests
-        if: always()
+      - name: Stage APK for upload
+        if: success()
+        shell: bash
         working-directory: ${{ env.PROJECT_DIR }}
-        run: set -o pipefail; gradle :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/test.log"
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK" || { echo "APK missing or empty: $APK"; find app/build/outputs -maxdepth 6 -type f -print 2>/dev/null || true; exit 1; }
+          mkdir -p "$RUNNER_TEMP/ps4monitor-download"
+          cp "$APK" "$RUNNER_TEMP/ps4monitor-download/PS4Monitor-debug.apk"
+          ls -lh "$RUNNER_TEMP/ps4monitor-download/PS4Monitor-debug.apk"
 
-      - name: Upload logs, reports and APK
+      - name: Upload installable APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PS4Monitor-APK
+          path: ${{ runner.temp }}/ps4monitor-download/PS4Monitor-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Run unit tests
+        if: success()
+        shell: bash
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          gradle :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/test.log"
+
+      - name: Upload build and test logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ps4monitor-ci
-          if-no-files-found: warn
+          name: PS4Monitor-build-logs
           path: |
-            ${{ runner.temp }}/test.log
             ${{ runner.temp }}/build.log
-            ${{ env.PROJECT_DIR }}/app/build/reports/tests/
-            ${{ env.PROJECT_DIR }}/app/build/test-results/
-            ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+            ${{ runner.temp }}/test.log
+          if-no-files-found: warn
+          retention-days: 14
