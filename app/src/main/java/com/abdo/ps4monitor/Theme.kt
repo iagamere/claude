@@ -82,11 +82,11 @@ object ThemeEngine {
         if (mode == ThemeMode.CUSTOM && profiles.none { it.id == activeProfileId }) mode = ThemeMode.DEFAULT
     }
     private fun sp() = Store.sp
-    fun setMode(m: ThemeMode) { mode = m; sp().edit().putString("th_mode", m.name).apply() }
-    fun selectPreset(id: String) { if (preset(id) == null) return; presetId = id; setMode(ThemeMode.PRESET); sp().edit().putString("th_preset", id).apply() }
-    fun selectProfile(id: String) { if (profiles.none { it.id == id }) return; activeProfileId = id; setMode(ThemeMode.CUSTOM); sp().edit().putString("th_profile", id).apply() }
+    fun chooseMode(m: ThemeMode) { mode = m; sp().edit().putString("th_mode", m.name).apply() }
+    fun selectPreset(id: String) { if (preset(id) == null) return; presetId = id; chooseMode(ThemeMode.PRESET); sp().edit().putString("th_preset", id).apply() }
+    fun selectProfile(id: String) { if (profiles.none { it.id == id }) return; activeProfileId = id; chooseMode(ThemeMode.CUSTOM); sp().edit().putString("th_profile", id).apply() }
     fun setGameAccents(b: Boolean) { applyGameAccents = b; sp().edit().putBoolean("th_gameaccent", b).apply() }
-    fun resetToDefault() { presetId = "default"; setMode(ThemeMode.DEFAULT); sp().edit().putString("th_preset", "default").apply() }
+    fun resetToDefault() { presetId = "default"; chooseMode(ThemeMode.DEFAULT); sp().edit().putString("th_preset", "default").apply() }
 
     // ------------------------------------------------------------------ profiles
     private fun persist() = sp().edit().putString("th_profiles", toJson(profiles).toString()).apply()
@@ -100,7 +100,7 @@ object ThemeEngine {
     fun duplicate(t: AppTheme): AppTheme { val d = t.copy(id = newId(), name = t.name.take(26) + " copy", builtin = false, basePreset = if (t.builtin) t.id else t.basePreset); saveProfile(d, false); return d }
     fun deleteProfile(id: String) {
         profiles = profiles.filter { it.id != id }; persist()
-        if (activeProfileId == id) { activeProfileId = null; sp().edit().remove("th_profile").apply(); if (mode == ThemeMode.CUSTOM) setMode(ThemeMode.DEFAULT) }
+        if (activeProfileId == id) { activeProfileId = null; sp().edit().remove("th_profile").apply(); if (mode == ThemeMode.CUSTOM) chooseMode(ThemeMode.DEFAULT) }
     }
     fun editableCopy(t: AppTheme) = if (t.builtin) t.copy(id = newId(), name = t.name + " (mine)", builtin = false, basePreset = t.id) else t
 

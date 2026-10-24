@@ -167,8 +167,8 @@ private fun modeHint(m: ThemeMode) = when (m) {
                         ThemeMode.values().forEach { m ->
                             FilterChip(mode == m, {
                                 when (m) {
-                                    ThemeMode.DEFAULT -> { ThemeEngine.setMode(m); pending = ThemeEngine.DEFAULT }
-                                    ThemeMode.DYNAMIC -> ThemeEngine.setMode(m)
+                                    ThemeMode.DEFAULT -> { ThemeEngine.chooseMode(m); pending = ThemeEngine.DEFAULT }
+                                    ThemeMode.DYNAMIC -> ThemeEngine.chooseMode(m)
                                     ThemeMode.PRESET -> ThemeEngine.selectPreset(ThemeEngine.presetId.takeIf { it != "default" } ?: "aurora").also { pending = ThemeEngine.base }
                                     ThemeMode.CUSTOM -> if (profiles.isEmpty()) editing = ThemeEngine.editableCopy(pending).copy(name = tr("My theme", "ثيمي"))
                                                         else { ThemeEngine.selectProfile(ThemeEngine.activeProfileId ?: profiles.first().id); pending = ThemeEngine.base }
