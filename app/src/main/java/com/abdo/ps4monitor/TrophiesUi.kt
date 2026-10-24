@@ -198,7 +198,7 @@ private object TrophyDataCache { val map = java.util.concurrent.ConcurrentHashMa
     val loaded = d.accounts.all { it.id in states }
     // the trophy list: the console's own database has the real names (the .trp pack may be encrypted); the pack supplies the pictures
     val dbAny = states.values.firstNotNullOfOrNull { it.db }
-    val trophies: List<Trophy>? = dbAny?.trophies?.map { x -> Trophy(x.id, x.name.ifBlank { "Trophy %03d".format(x.id) }, x.detail, x.grade, !x.visible, pack?.trophies?.firstOrNull { it.id == x.id }?.icon ?: x.icon.ifBlank { null }) } ?: pack?.trophies
+    val trophies: List<Trophy>? = dbAny?.trophies?.map { x -> Trophy(x.id, x.name.ifBlank { "Trophy %03d".format(x.id) }, x.detail, pack?.trophies?.firstOrNull { it.id == x.id }?.grade?.takeIf { it != '?' } ?: x.grade, !x.visible, pack?.trophies?.firstOrNull { it.id == x.id }?.icon ?: x.icon.ifBlank { null }) } ?: pack?.trophies
     val readable = dbAny != null || pack?.namesReadable == true
     if (trophies == null) {
         if (!loaded) { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { LinearProgressIndicator(Modifier.fillMaxWidth()); Dim(tr("Reading trophies…", "جارٍ قراءة الإنجازات…")) }; return }

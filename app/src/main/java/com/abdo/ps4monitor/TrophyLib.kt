@@ -355,8 +355,12 @@ object TrophyLib {
         val dist = rows.groupingBy { it.grade }.eachCount()
         val want4 = mapOf('P' to pick.pn, 'G' to pick.gn, 'S' to pick.sn, 'B' to pick.bn)
         val maps = listOf(mapOf(1 to 'P', 2 to 'G', 3 to 'S', 4 to 'B'), mapOf(0 to 'P', 1 to 'G', 2 to 'S', 3 to 'B'), mapOf(4 to 'P', 3 to 'G', 2 to 'S', 1 to 'B'), mapOf(3 to 'P', 2 to 'G', 1 to 'S', 0 to 'B'))
-        val gm = maps.firstOrNull { m -> want4.values.sum() > 0 && want4.all { (ch, n) -> m.entries.filter { it.value == ch }.sumOf { dist[it.key] ?: 0 } == n } && dist.keys.all { it in m } }
+        // exact match first; if the title's counts differ (e.g. DLC groups are counted apart) take the mapping that fits best
+        fun misfit(m: Map<Int, Char>) = want4.entries.sumOf { (ch, n) -> Math.abs(m.entries.filter { it.value == ch }.sumOf { dist[it.key] ?: 0 } - n) }
+        val usable = maps.filter { m -> dist.keys.all { it in m } }
+        val gm = if (want4.values.sum() > 0) usable.minByOrNull { misfit(it) }?.takeIf { misfit(it) <= maxOf(2, rows.size / 2) } else usable.firstOrNull()
         if (gm == null) notes += "grade numbers ${dist} do not match the title's counts (P${pick.pn} G${pick.gn} S${pick.sn} B${pick.bn}): grades are not shown"
+        else if (misfit(gm) != 0) notes += "grade numbers ${dist} only approximately match the title's counts (P${pick.pn} G${pick.gn} S${pick.sn} B${pick.bn}); the trophy pack's own grades are preferred"
         val list = rows.map { r -> DbTrophy(r.tid, r.group, r.name, r.detail, gm?.get(r.grade) ?: '?', times.containsKey(r.id), !r.hidden, times[r.id] ?: 0L, r.icon) }
         val earned = list.count { it.unlocked }
         val pr = um?.progress?.takeIf { it in 0..100 } ?: if (pick.total > 0) earned * 100 / pick.total else 0
