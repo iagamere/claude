@@ -26,7 +26,10 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      # Install explicit SDK packages. The legacy package name `tools` is no longer available.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -35,6 +38,12 @@ jobs:
       - name: Build debug APK
         working-directory: ${{ env.PROJECT_DIR }}
         run: set -o pipefail; gradle :app:assembleDebug --stacktrace 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Verify APK was produced
+        if: success()
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk || { echo "Debug APK was not produced"; exit 1; }
 
       - name: Unit tests
         if: always()
