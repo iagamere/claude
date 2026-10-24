@@ -131,7 +131,7 @@ private object TrophyDataCache { val map = java.util.concurrent.ConcurrentHashMa
 /** Statistics of the selected account, from the real trophy data only. Missing data shows the existing explanation instead of invented numbers. */
 @Composable private fun TrophyOverview(ps4: Ps4, acc: Account, pct: Int?, u: Map<Int, Long>?, earnedCount: Int, total: Int, readable: Boolean, trophies: List<Trophy>, earned: List<Trophy>) {
     val cs = MaterialTheme.colorScheme
-    val img by produceState<Bitmap?>(Thumbs.peekAny(ps4, acc.avatarPaths, 128), acc.id) { if (value == null) value = Thumbs.loadAny(ps4, acc.avatarPaths, 128) }
+    val img by produceState<Bitmap?>(Thumbs.peekAny(ps4, acc.avatarPaths, 128), ps4.id, acc.id) { value = Thumbs.peekAny(ps4, acc.avatarPaths, 128) ?: Thumbs.loadAny(ps4, acc.avatarPaths, 128) }
     val shape = RoundedCornerShape(22.dp)
     Column(Modifier.fillMaxWidth().clip(shape).background(Brush.linearGradient(listOf(cs.surfaceContainerHigh, cs.surfaceContainer))).border(1.dp, cs.outlineVariant, shape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
