@@ -189,7 +189,7 @@ private fun modeHint(m: ThemeMode) = when (m) {
                         Dim(tr("Looks up the game's name in an online encyclopedia once, so sports, racing, horror, fantasy ... games get their own motifs. Only the name is sent. Off = the name and the artwork only.",
                             "يبحث عن اسم اللعبة مرة واحدة في موسوعة على الإنترنت لتحصل ألعاب الرياضة والسباق والرعب والفانتازيا على زخارفها الخاصة. يُرسَل الاسم فقط. عند الإيقاف: الاسم والغلاف فقط."))
                     }
-                    Switch(ThemeEngine.onlineGenre, { ThemeEngine.setOnlineGenre(it) })
+                    Switch(ThemeEngine.onlineGenre, { ThemeEngine.enableOnlineGenre(it) })
                 }
             }
             item {

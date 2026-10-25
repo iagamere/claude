@@ -1,4 +1,4 @@
-# PS4 Download Monitor 6.8.0 (Design DNA, phase 2.5: the game's type decides the motifs)
+# PS4 Download Monitor 6.8.0 (Design DNA, phase 2.5: the game type decides the motifs; fixed JVM-signature clash in Theme.kt)
 
 - Problem fixed: designs were chosen only from the artwork, so many covers fell into the same few looks recoloured (a light football cover got the samurai paper look in green).
 - `GameTraits.kt` (pure): 18 game-type tags (sports, racing, fighting, shooter, horror, fantasy, dark fantasy, samurai, sci-fi, cyberpunk, space, pixel, anime, adventure, strategy, survival, family, nautical) from title keywords (offline) and from the first sentences of the game's encyclopedia entry (`GameGenre.kt`, online, optional: Settings > Theme > "Detect the game type online"; only the game name is sent, once, then cached 6 months).

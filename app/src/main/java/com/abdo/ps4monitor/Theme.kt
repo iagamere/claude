@@ -89,7 +89,7 @@ object ThemeEngine {
     fun chooseMode(m: ThemeMode) { mode = m; sp().edit().putString("th_mode", m.name).apply() }
     fun selectPreset(id: String) { if (preset(id) == null) return; presetId = id; chooseMode(ThemeMode.PRESET); sp().edit().putString("th_preset", id).apply() }
     fun selectProfile(id: String) { if (profiles.none { it.id == id }) return; activeProfileId = id; chooseMode(ThemeMode.CUSTOM); sp().edit().putString("th_profile", id).apply() }
-    fun setOnlineGenre(b: Boolean) { onlineGenre = b; sp().edit().putBoolean("th_online", b).apply() }
+    fun enableOnlineGenre(b: Boolean) { onlineGenre = b; sp().edit().putBoolean("th_online", b).apply() }
     fun setGameAccents(b: Boolean) { applyGameAccents = b; sp().edit().putBoolean("th_gameaccent", b).apply() }
     fun resetToDefault() { presetId = "default"; chooseMode(ThemeMode.DEFAULT); sp().edit().putString("th_preset", "default").apply() }
 
