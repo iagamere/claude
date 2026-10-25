@@ -122,42 +122,55 @@ import kotlinx.coroutines.withContext
     }
     var tab by rememberSaveable(g.titleId) { mutableIntStateOf(0) }
     val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
-    // theme: Dynamic mode = the game's own; Preset / Custom = the saved theme (optionally with the game's accents); App default = the app's current scheme
+    // theme: a theme assigned to this game wins; Dynamic mode = the game's own; Preset / Custom = the saved theme (optionally with the game's accents);
+    // App default = the app's current scheme. The appearance (light / dark / system) is applied on top of whichever theme this is.
     val gameTheme = rememberGameTheme(g.titleId, icon)
-    val cs = if (ThemeEngine.mode == ThemeMode.DEFAULT) MaterialTheme.colorScheme else ThemeEngine.scheme(ThemeEngine.forGame(gameTheme))
+    val assigned = ThemeEngine.assignedTheme(g.titleId)
+    val dark = appDark()
+    val shown = if (ThemeEngine.mode == ThemeMode.DEFAULT && assigned == null) null else ThemeEngine.resolve(ThemeEngine.forGame(gameTheme, g.titleId), dark)
+    val cs = if (shown == null) MaterialTheme.colorScheme else ThemeEngine.scheme(shown)
+    val dna = shown?.dna ?: LocalDna.current
+    val tokens = if (shown == null) LocalTokens.current else ThemeEngine.tokens(shown)
     val sheetBg by animateColorAsState(cs.surface, tween(350), label = "gameBg")
-    MaterialTheme(colorScheme = cs, shapes = MaterialTheme.shapes) {
+    CompositionLocalProvider(LocalDna provides dna, LocalTokens provides tokens) { MaterialTheme(colorScheme = cs, typography = dnaTypography(dna), shapes = dnaShapes(dna)) {
         ModalBottomSheet(onDismissRequest = onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = sheetBg, contentColor = cs.onSurface, dragHandle = null, scrimColor = Color.Black.copy(alpha = 0.6f)) {
-            Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(Modifier.dnaTexture(dna, cs.onSurface, cs.primary).verticalScroll(rememberScrollState()).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy((14 * dna.spacing).dp)) {
                 GameHero(g, icon, banner) 
                 Box(Modifier.padding(horizontal = 16.dp)) { SegmentedTabs(listOf(tr("Details", "التفاصيل"), tr("Captures", "اللقطات"), tr("Trophies", "الإنجازات")), tab) { tab = it } }
                 if (tab == 1) Box(Modifier.padding(horizontal = 16.dp).fillMaxWidth().height(screenH * 0.7f)) { CapturesTab(ps4, 0, g.titleId) }
                 if (tab == 2) Box(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) { TrophiesTab(ps4, g) }
                 if (tab == 0) Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(cs.surfaceContainerHigh).border(1.dp, cs.outlineVariant, RoundedCornerShape(18.dp)).padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)) { rows.forEach { (k, v) -> InfoRow(k, v) } }
-                    FilledTonalButton(onClick = { clip.setText(AnnotatedString(g.titleId)); Toast.makeText(ctx, tr("Copied", "تم النسخ"), Toast.LENGTH_SHORT).show() }) {
+                    DnaSurface { rows.forEachIndexed { i, (k, v) -> if (i > 0) DnaRule(Modifier.fillMaxWidth()); InfoRow(k, v) } }
+                    GameThemePicker(g.titleId)
+                    FilledTonalButton(shape = dnaShape(14), onClick = { clip.setText(AnnotatedString(g.titleId)); Toast.makeText(ctx, tr("Copied", "تم النسخ"), Toast.LENGTH_SHORT).show() }) {
                         Ico(R.drawable.ic_copy, 18.dp); Spacer(Modifier.width(6.dp)); Lbl(tr("Copy title ID", "نسخ معرّف اللعبة"))
                     }
                     if (DeletePolicy.isGameId(g.titleId)) DeleteGameSection(ps4, g, onDeleted, onClose)
                 }
             }
         }
-    }
+    } }
 }
 
-/** Edge-to-edge artwork fading into the page, with the cover and title on top. Missing artwork falls back to a themed gradient. */
+/**
+ * The top of the game page. The DNA decides the composition: FADE = edge-to-edge artwork fading into the page with the cover and title on top;
+ * FRAMED = artwork inside a ruled frame under an accent band, the cover overlapping its lower edge and the title on the page below it.
+ * Missing artwork falls back to a themed gradient. Ornaments (leaves, spores, light shafts, brush stroke ...) come from the DNA.
+ */
 @Composable private fun GameHero(g: GameInfo, icon: Bitmap?, banner: Bitmap?) {
-    val cs = MaterialTheme.colorScheme
+    val cs = MaterialTheme.colorScheme; val d = LocalDna.current
+    if (d.hero == HeroKind.FRAMED) { GameHeroFramed(g, icon, banner); return }
+    val coverShape = dnaShape(18)
     Box(Modifier.fillMaxWidth().height(250.dp)) {
         val bn = banner
         if (bn != null) Image(bn.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         else Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(cs.primaryContainer, cs.surfaceContainer, cs.surface))))
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.35f), 0.35f to Color.Transparent, 0.75f to cs.surface.copy(alpha = 0.85f), 1f to cs.surface)))
         Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.25f), 0.25f to Color.Transparent, 0.75f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.25f))))
+        Box(Modifier.matchParentSize().dnaOrnaments(d, cs.primary))
         Row(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Bottom) {
-            Box(Modifier.size(104.dp).shadow(12.dp, RoundedCornerShape(18.dp)).clip(RoundedCornerShape(18.dp)).background(cs.surfaceContainerHighest).border(1.dp, cs.primary.copy(alpha = 0.5f), RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(104.dp).shadow(12.dp, coverShape).clip(coverShape).background(cs.surfaceContainerHighest).dnaBorder(d, cs.primary.copy(alpha = 0.5f), cs.primary, coverShape), contentAlignment = Alignment.Center) {
                 val ic = icon
                 if (ic != null) Image(ic.asImageBitmap(), g.title, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 else Ico(R.drawable.ic_package, 36.dp, cs.outline)
@@ -170,25 +183,31 @@ import kotlinx.coroutines.withContext
     }
 }
 
-/** Segmented tab control: the selected segment is tinted with the active accent. Same behaviour as before (index in, index out). */
-@Composable fun SegmentedTabs(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    val cs = MaterialTheme.colorScheme
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(cs.surfaceContainerHigh).border(1.dp, cs.outlineVariant, RoundedCornerShape(16.dp)).padding(4.dp)) {
-        labels.forEachIndexed { i, t ->
-            val on = i == selected
-            val bg by animateColorAsState(if (on) cs.primary.copy(alpha = 0.20f) else Color.Transparent, tween(180), label = "tab")
-            Box(Modifier.weight(1f).heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).background(bg).clickable { onSelect(i) }.padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
-                Lbl(t, color = if (on) cs.primary else cs.onSurfaceVariant, weight = if (on) FontWeight.SemiBold else FontWeight.Medium, style = MaterialTheme.typography.titleSmall)
+@Composable private fun GameHeroFramed(g: GameInfo, icon: Bitmap?, banner: Bitmap?) {
+    val cs = MaterialTheme.colorScheme; val d = LocalDna.current
+    val frame = dnaShape(6); val coverShape = dnaShape(10)
+    Column(Modifier.fillMaxWidth().background(cs.surfaceContainer)) {
+        Box(Modifier.fillMaxWidth().height(6.dp).background(cs.primary))
+        Box(Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 14.dp).height(160.dp).clip(frame)) {
+            val bn = banner
+            if (bn != null) Image(bn.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            else Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(cs.primaryContainer, cs.surfaceContainerHigh, cs.surface))))
+            Box(Modifier.matchParentSize().dnaOrnaments(d, cs.primary, OrnamentKind.values().toSet() - OrnamentKind.BRUSH_SWEEP))
+            Box(Modifier.matchParentSize().dnaBorder(d, cs.outline, cs.primary, frame))
+        }
+        Box(Modifier.fillMaxWidth().heightIn(min = 100.dp).dnaOrnaments(d, cs.primary, setOf(OrnamentKind.BRUSH_SWEEP))) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp).offset(y = (-30).dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
+                Box(Modifier.size(96.dp).shadow(6.dp, coverShape).clip(coverShape).background(cs.surfaceContainerHighest).dnaBorder(d, cs.outline, cs.primary, coverShape), contentAlignment = Alignment.Center) {
+                    val ic = icon
+                    if (ic != null) Image(ic.asImageBitmap(), g.title, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    else Ico(R.drawable.ic_package, 36.dp, cs.outline)
+                }
+                Column(Modifier.weight(1f).padding(top = 34.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(g.title, style = MaterialTheme.typography.titleLarge, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    Dim(listOfNotNull(g.titleId, g.version.takeIf { it.isNotBlank() }?.let { "v$it" }).joinToString("  •  "), maxLines = 1)
+                }
             }
         }
-    }
-}
-
-/** Section title with a fading rule, used between blocks of the game page. */
-@Composable fun SectionHeader(t: String) {
-    Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(t, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Box(Modifier.weight(1f).height(1.dp).background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.outlineVariant, Color.Transparent))))
     }
 }
 

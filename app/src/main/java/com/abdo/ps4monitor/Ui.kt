@@ -45,10 +45,7 @@ fun pkgRoute(ps4Id: String, path: String) = "pkg/${Uri.encode(ps4Id)}/${Uri.enco
 
 @Composable fun SectionTitle(t: String) = Text(t, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
 
-@Composable fun Panel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    val shape = MaterialTheme.shapes.large; val cs = MaterialTheme.colorScheme
-    Column(modifier.fillMaxWidth().clip(shape).background(cs.surfaceContainerHigh).border(1.dp, cs.outlineVariant, shape).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
-}
+@Composable fun Panel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) = DnaSurface(modifier, content = content)
 
 @Composable fun Dim(t: String, modifier: Modifier = Modifier, maxLines: Int = Int.MAX_VALUE) =
     Text(t, modifier, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = maxLines, overflow = TextOverflow.Ellipsis)

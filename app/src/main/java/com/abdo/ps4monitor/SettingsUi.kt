@@ -47,8 +47,9 @@ import kotlinx.coroutines.withContext
         item { Panel {
             SectionTitle(tr("Language", "اللغة"))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf(0 to tr("Phone", "الهاتف"), 1 to "English", 2 to "العربية").forEach { (i, t) -> FilterChip(Lang.mode == i, { Store.setLang(i) }, label = { Lbl(t) }) } }
-            SectionTitle(tr("Appearance (app default theme)", "المظهر (الثيم الافتراضي)"))
+            SectionTitle(tr("Appearance (light / dark)", "المظهر (فاتح / داكن)"))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf(tr("System", "النظام"), tr("Light", "فاتح"), tr("Dark", "داكن")).forEachIndexed { i, t -> FilterChip(Store.theme.intValue == i, { Store.setTheme(i) }, label = { Lbl(t) }) } }
+            Dim(tr("Applies to every theme (Settings > Theme).", "ينطبق على كل الثيمات (الإعدادات ← الثيم)."))
             if (android.os.Build.VERSION.SDK_INT >= 31) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) { Text(tr("Use phone colours", "استخدام ألوان الهاتف")); Dim(tr("Follows your wallpaper / system accent colour", "يتبع لون الهاتف الأساسي")) }
                 Switch(Store.dynamic.value, { Store.setDynamic(it) })

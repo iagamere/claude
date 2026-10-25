@@ -73,7 +73,7 @@ private object TrophyDataCache { val map = java.util.concurrent.ConcurrentHashMa
     val img by produceState<Bitmap?>(Thumbs.peekAny(ps4, a.avatarPaths, 128), a.id) { if (value == null) value = Thumbs.loadAny(ps4, a.avatarPaths, 128) }
     val cs = MaterialTheme.colorScheme
     val ring = cs.primary; val track = if (selected) cs.primary.copy(alpha = 0.25f) else cs.outlineVariant
-    Column(Modifier.width(92.dp).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(Modifier.width(92.dp).clip(dnaShape(16)).clickable(onClick = onClick).padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(Modifier.size(76.dp), contentAlignment = Alignment.Center) {
             Canvas(Modifier.matchParentSize()) {
                 val w = if (selected) 6.dp.toPx() else 4.dp.toPx(); val inset = w / 2
@@ -103,12 +103,12 @@ private object TrophyDataCache { val map = java.util.concurrent.ConcurrentHashMa
     }
     val hiddenLocked = t.hidden && !got
     val cs = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(16.dp)
+    val shape = dnaShape(16); val dna = LocalDna.current
     val tint = if (got) gradeColor(t.grade) else cs.outlineVariant
     Row(Modifier.fillMaxWidth().clip(shape).background(if (got) cs.surfaceContainerHigh else cs.surfaceContainerLow)
-        .border(1.dp, if (got) tint.copy(alpha = 0.45f) else cs.outlineVariant.copy(alpha = 0.6f), shape).padding(10.dp),
+        .dnaBorder(dna, if (got) tint.copy(alpha = 0.45f) else cs.outlineVariant.copy(alpha = 0.6f), if (got) tint else cs.outlineVariant, shape).padding((10 * dna.spacing).dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(58.dp).clip(RoundedCornerShape(12.dp)).background(cs.surfaceContainerHighest), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(58.dp).clip(dnaShape(12)).background(cs.surfaceContainerHighest), contentAlignment = Alignment.Center) {
             val b = icon
             if (b != null && !hiddenLocked) Image(b.asImageBitmap(), t.name, Modifier.fillMaxSize().alpha(if (got || !known) 1f else 0.4f), contentScale = ContentScale.Crop)
             else Ico(R.drawable.ic_lock, 22.dp, cs.outline)
@@ -132,9 +132,7 @@ private object TrophyDataCache { val map = java.util.concurrent.ConcurrentHashMa
 @Composable private fun TrophyOverview(ps4: Ps4, acc: Account, pct: Int?, u: Map<Int, Long>?, earnedCount: Int, total: Int, readable: Boolean, trophies: List<Trophy>, earned: List<Trophy>) {
     val cs = MaterialTheme.colorScheme
     val img by produceState<Bitmap?>(Thumbs.peekAny(ps4, acc.avatarPaths, 128), ps4.id, acc.id) { value = Thumbs.peekAny(ps4, acc.avatarPaths, 128) ?: Thumbs.loadAny(ps4, acc.avatarPaths, 128) }
-    val shape = RoundedCornerShape(22.dp)
-    Column(Modifier.fillMaxWidth().clip(shape).background(Brush.linearGradient(listOf(cs.surfaceContainerHigh, cs.surfaceContainer))).border(1.dp, cs.outlineVariant, shape).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    DnaSurface(radius = 22, raised = true, spacing = 12.dp) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Box(Modifier.size(52.dp).clip(CircleShape).background(cs.surfaceContainerHighest), contentAlignment = Alignment.Center) {
                 val b = img
@@ -148,9 +146,7 @@ private object TrophyDataCache { val map = java.util.concurrent.ConcurrentHashMa
                 Text(tr("$earnedCount of $total trophies", "$earnedCount من $total إنجازًا"), Modifier.padding(bottom = 6.dp), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
             }
             val frac by animateFloatAsState(pct.coerceIn(0, 100) / 100f, tween(500), label = "pct")
-            Box(Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(cs.outlineVariant)) {
-                Box(Modifier.fillMaxWidth(frac).fillMaxHeight().clip(CircleShape).background(Brush.horizontalGradient(listOf(cs.primary, cs.secondary))))
-            }
+            DnaProgress(frac)
             if (readable) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 listOf('P' to tr("Platinum", "بلاتينية"), 'G' to tr("Gold", "ذهبية"), 'S' to tr("Silver", "فضية"), 'B' to tr("Bronze", "برونزية")).forEach { (gr, name) ->
                     val all = trophies.count { it.grade == gr }

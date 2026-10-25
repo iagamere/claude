@@ -50,25 +50,33 @@ class MainActivity : ComponentActivity() {
     val ctx = LocalContext.current
     val mode = ThemeEngine.mode
     val sysDark = isSystemInDarkTheme()
-    val dark = when (Store.theme.intValue) { 1 -> false; 2 -> true; else -> sysDark }
-    // App default mode keeps the old Appearance options (system / light / dark, phone colours); presets, profiles and the game theme are always dark.
-    val legacy = mode == ThemeMode.DEFAULT && (Store.theme.intValue == 1 || (Store.dynamic.value && Build.VERSION.SDK_INT >= 31) || (Store.theme.intValue == 0 && !sysDark))
+    val dark = when (Store.theme.intValue) { 1 -> false; 2 -> true; else -> sysDark }       // appearance: independent of the theme
+    // App default (and Dynamic, whose non-game screens use the default) keeps the old Appearance options (system / light / dark, phone colours).
+    // Presets, custom profiles and assigned themes follow the appearance too: each has a dark and a light colour set (hand-made or derived).
+    val pagesDefault = mode == ThemeMode.DEFAULT || mode == ThemeMode.DYNAMIC
+    val legacy = pagesDefault && (Store.theme.intValue == 1 || (Store.dynamic.value && Build.VERSION.SDK_INT >= 31) || (Store.theme.intValue == 0 && !sysDark))
     val appTheme = ThemeEngine.base
+    val shown = ThemeEngine.resolve(appTheme, dark)                  // the theme's colours in the current appearance
     val cs = when {
         legacy && Store.dynamic.value && Build.VERSION.SDK_INT >= 31 -> if (dark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
         legacy && !dark -> lightColorScheme(primary = Color(0xFF5B3FD6), secondary = Color(0xFF3A5BA0), tertiary = Color(0xFF7D5260))
-        else -> ThemeEngine.scheme(appTheme)
+        else -> ThemeEngine.scheme(shown)
     }
-    val lightUi = legacy && !dark
+    val lightUi = if (legacy) !dark else ColorMath.luminance(shown.bg) > 0.4
+    val dna = if (pagesDefault) Dna.CLASSIC else shown.dna
+    val tokens = ThemeEngine.tokens(if (legacy && !dark) ThemeEngine.resolve(appTheme, false) else shown)
     val view = LocalView.current
     SideEffect {
         val w = (view.context as? Activity)?.window ?: return@SideEffect
         w.statusBarColor = cs.surface.toArgb(); w.navigationBarColor = cs.surfaceContainer.toArgb()
         WindowCompat.getInsetsController(w, view).apply { isAppearanceLightStatusBars = lightUi; isAppearanceLightNavigationBars = lightUi }
     }
-    val shapes = Shapes(small = RoundedCornerShape(10.dp), medium = RoundedCornerShape(14.dp), large = RoundedCornerShape(18.dp), extraLarge = RoundedCornerShape(24.dp))
-    CompositionLocalProvider(LocalLayoutDirection provides if (Lang.isAr) LayoutDirection.Rtl else LayoutDirection.Ltr, LocalTokens provides ThemeEngine.tokens(appTheme)) {
-        MaterialTheme(colorScheme = cs, shapes = shapes) { Surface(Modifier.fillMaxSize(), color = cs.surface) { AppNav(); LaunchedEffect(Unit) { Tour.startIfFirstRun() }; TourOverlay() } }
+    CompositionLocalProvider(LocalLayoutDirection provides if (Lang.isAr) LayoutDirection.Rtl else LayoutDirection.Ltr, LocalTokens provides tokens, LocalDna provides dna) {
+        MaterialTheme(colorScheme = cs, typography = dnaTypography(dna), shapes = dnaShapes(dna)) {
+            Surface(Modifier.fillMaxSize(), color = cs.surface) {
+                Box(Modifier.fillMaxSize().dnaTexture(dna, cs.onSurface, cs.primary)) { AppNav(); LaunchedEffect(Unit) { Tour.startIfFirstRun() }; TourOverlay() }
+            }
+        }
     }
 }
 
@@ -82,7 +90,7 @@ private val TABS = listOf(Triple("home", R.drawable.ic_home, "Home" to "الرئ
     val topLevel = TABS.any { it.first == route }
     val active by DownloadRepo.all.collectAsState()
     val activeCount = active.count { it.state.active }
-    Scaffold(bottomBar = {
+    Scaffold(containerColor = Color.Transparent, bottomBar = {
         if (topLevel) NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 0.dp) {
             TABS.forEach { (r, icon, label) ->
                 NavigationBarItem(selected = route == r, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary, selectedTextColor = MaterialTheme.colorScheme.primary, indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f), unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant), label = { Lbl(tr(label.first, label.second), style = MaterialTheme.typography.labelMedium) },

@@ -1,6 +1,7 @@
 package com.abdo.ps4monitor
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -25,7 +26,18 @@ data class AppTheme(
     val gameAccents: Boolean = false,
     /** the preset this profile was copied from (for "restore original values") */
     val basePreset: String? = null,
-)
+    /** the non-colour layers of the design (shape, border, divider, texture, ornaments, typography ...) */
+    val dna: Dna = Dna.CLASSIC,
+    /** hand-made light colours; null = derived automatically from the dark ones (see [Colors.deriveLight]) */
+    val light: ColorSet? = null,
+) {
+    val dark: ColorSet get() = ColorSet(bg, bg2, surface, accent, accent2, text, text2, border, progress)
+    /** the colours of one appearance, as stored (light falls back to the derived set) */
+    fun colorSet(light: Boolean): ColorSet = if (!light) dark else (this.light ?: Colors.deriveLight(dark))
+    /** this theme with the colours of one appearance replaced; the other appearance and every other layer are untouched */
+    fun withSet(light: Boolean, c: ColorSet): AppTheme =
+        if (light) copy(light = c) else copy(bg = c.bg, bg2 = c.bg2, surface = c.surface, accent = c.accent, accent2 = c.accent2, text = c.text, text2 = c.text2, border = c.border, progress = c.progress)
+}
 
 /** The tokens the UI needs beyond what Material has a slot for. */
 @Immutable
@@ -39,23 +51,12 @@ val LocalTokens = compositionLocalOf { ThemeEngine.tokens(ThemeEngine.DEFAULT) }
 enum class ThemeMode { DEFAULT, PRESET, CUSTOM, DYNAMIC }
 
 object ThemeEngine {
-    private fun c(h: Long) = (0xFF000000L or h).toInt()
-    private fun p(id: String, n: String, bg: Long, bg2: Long, sf: Long, a: Long, a2: Long, tx: Long, tx2: Long, bd: Long, pr: Long = a) =
-        AppTheme(id, n, true, c(bg), c(bg2), c(sf), c(a), c(a2), c(tx), c(tx2), c(bd), c(pr))
+    private fun fromSpec(p: PresetSpec) = AppTheme(p.id, p.name, true, p.dark.bg, p.dark.bg2, p.dark.surface, p.dark.accent, p.dark.accent2,
+        p.dark.text, p.dark.text2, p.dark.border, p.dark.progress, dna = p.dna, light = p.light)
 
     /** App default: the deep navy / indigo look of the redesign. */
-    val DEFAULT = p("default", "PS4 Monitor", 0x0A1022, 0x0E1730, 0x141E3D, 0x7C6BFF, 0x4FC3F7, 0xF1F3FF, 0xA9B2D6, 0x2A3769)
-    val PRESETS: List<AppTheme> = listOf(
-        DEFAULT,
-        p("midnight", "Midnight", 0x0D0E10, 0x131519, 0x1B1E24, 0x9AA7B8, 0x6C7A8C, 0xEDEFF2, 0xA2A9B3, 0x2B2F37),
-        p("aurora", "Aurora", 0x06141C, 0x0A1E29, 0x0F2B3A, 0x2DD4BF, 0x38BDF8, 0xE8F8FA, 0x9CC7CF, 0x1C4152),
-        p("violet", "Violet Pulse", 0x0F0B1A, 0x161026, 0x201737, 0xA78BFA, 0xE879F9, 0xF3EFFF, 0xB5A9D6, 0x3A2B63),
-        p("emerald", "Emerald Abyss", 0x050B08, 0x0A1510, 0x10201A, 0x34D399, 0x84CC16, 0xE9FBF2, 0x9CC4B0, 0x1D4032),
-        p("crimson", "Crimson Night", 0x0E0A0B, 0x161012, 0x20171A, 0xE5484D, 0xF59E0B, 0xF8EEEE, 0xC2A6A8, 0x44262B),
-        p("arctic", "Arctic Blue", 0x07111F, 0x0B1A30, 0x112645, 0x7DD3FC, 0x60A5FA, 0xEEF7FF, 0xA3BDD6, 0x214470),
-        p("gold", "Solar Gold", 0x0B0A07, 0x14120C, 0x1E1B12, 0xE0B341, 0xD97706, 0xFBF6E8, 0xC4B896, 0x453D22),
-        p("rose", "Rose Nebula", 0x120A14, 0x1B101F, 0x271629, 0xF472B6, 0xC084FC, 0xFDEEF7, 0xCDA6BF, 0x4A2849),
-    )
+    val DEFAULT = fromSpec(DnaPresets.DEFAULT)
+    val PRESETS: List<AppTheme> = DnaPresets.ALL.map { fromSpec(it) }
     fun preset(id: String?) = PRESETS.firstOrNull { it.id == id }
 
     // ------------------------------------------------------------------ state (observable)
@@ -114,32 +115,41 @@ object ThemeEngine {
     }
     fun hex(c: Int) = "#%06X".format(c and 0xFFFFFF)
 
-    /** Makes a user theme safe: text and accents are pushed until they are readable on the surfaces they sit on. */
+    /** Makes a user theme safe: text and accents are pushed until they are readable on the surfaces they sit on (both appearances). */
     fun sanitize(t: AppTheme): AppTheme {
-        fun opaque(x: Int) = x or (0xFF shl 24)
-        val bg = opaque(t.bg); val bg2 = opaque(t.bg2); val sf = opaque(t.surface)
-        val worst = if (ColorMath.luminance(sf) > ColorMath.luminance(bg)) sf else bg
-        val lightUi = ColorMath.luminance(bg) > 0.5
-        fun fix(fg: Int, min: Double): Int {
-            var x = opaque(fg); var n = 0
-            while (ColorMath.contrast(x, worst) < min && n++ < 40) x = ColorMath.blend(x, if (lightUi) 0xFF000000.toInt() else 0xFFFFFFFF.toInt(), 0.08f)
-            return x
-        }
-        return t.copy(bg = bg, bg2 = bg2, surface = sf, text = fix(t.text, 7.0), text2 = fix(t.text2, 4.5),
-            accent = fix(t.accent, 3.0), accent2 = fix(t.accent2, 3.0), progress = fix(t.progress, 3.0), border = opaque(t.border))
+        val d = Colors.readable(t.dark)
+        return t.withSet(false, d).copy(light = t.light?.let { Colors.readable(it) })
     }
+
+    /** Contrast problems of one appearance of a theme, for the editor warning. */
+    fun warnings(t: AppTheme, light: Boolean): List<String> = Colors.audit(t.colorSet(light))
+
+    // ------------------------------------------------------------------ appearance (light / dark) is independent of the theme
+    /** The theme as it is shown in the given appearance: its own colour set, with every other layer kept. */
+    fun resolve(t: AppTheme, dark: Boolean): AppTheme = if (dark) t else t.withSet(false, t.colorSet(true))
 
     // ------------------------------------------------------------------ tokens -> Material
     fun tokens(t: AppTheme): Tokens {
+        val lightUi = ColorMath.luminance(t.bg) > 0.4
         val onAcc = if (ColorMath.contrast(t.accent, 0xFF0B0B10.toInt()) >= ColorMath.contrast(t.accent, 0xFFFFFFFF.toInt())) 0xFF0B0B10.toInt() else 0xFFFFFFFF.toInt()
         return Tokens(Color(t.bg), Color(t.bg2), Color(t.surface), Color(t.accent), Color(t.accent2), Color(t.text), Color(t.text2),
             Color(ColorMath.blend(t.text2, t.bg, 0.35f)), Color(t.border), Color(t.progress),
-            Color(0xFF4ADE80), Color(0xFFFBBF24), Color(0xFFFF6B7A), Color(onAcc))
+            if (lightUi) Color(0xFF1B7F3A) else Color(0xFF4ADE80), if (lightUi) Color(0xFF9A5B00) else Color(0xFFFBBF24), if (lightUi) Color(0xFFC62828) else Color(0xFFFF6B7A), Color(onAcc))
     }
     fun scheme(t: AppTheme): ColorScheme {
         val k = tokens(t)
         val hi = Color(ColorMath.blend(t.surface, t.text, 0.08f)); val lo = Color(ColorMath.blend(t.bg, t.surface, 0.5f))
-        return darkColorScheme(
+        return if (ColorMath.luminance(t.bg) > 0.4) lightColorScheme(
+            primary = k.accent, onPrimary = k.onAccent, primaryContainer = Color(ColorMath.blend(t.surface, t.accent, 0.28f)), onPrimaryContainer = k.text,
+            secondary = k.accent2, onSecondary = k.onAccent, secondaryContainer = Color(ColorMath.blend(t.surface, t.accent2, 0.18f)), onSecondaryContainer = k.text,
+            tertiary = k.accent2, onTertiary = k.onAccent, tertiaryContainer = Color(ColorMath.blend(t.surface, t.accent2, 0.22f)), onTertiaryContainer = k.text,
+            background = k.bg, onBackground = k.text, surface = k.bg, onSurface = k.text, onSurfaceVariant = k.text2,
+            surfaceVariant = k.surface, surfaceTint = k.accent,
+            surfaceContainerLowest = k.bg, surfaceContainerLow = lo, surfaceContainer = k.bg2, surfaceContainerHigh = k.surface, surfaceContainerHighest = hi,
+            outline = Color(ColorMath.blend(t.border, t.text2, 0.35f)), outlineVariant = k.border,
+            error = k.error, onError = Color(0xFFFFFFFF), errorContainer = Color(0xFFF9DEDC), onErrorContainer = Color(0xFF410E0B),
+        )
+        else darkColorScheme(
             primary = k.accent, onPrimary = k.onAccent, primaryContainer = Color(ColorMath.blend(t.surface, t.accent, 0.28f)), onPrimaryContainer = k.text,
             secondary = k.accent2, onSecondary = k.onAccent, secondaryContainer = Color(ColorMath.blend(t.surface, t.accent2, 0.18f)), onSecondaryContainer = k.text,
             tertiary = k.accent2, onTertiary = k.onAccent, tertiaryContainer = Color(ColorMath.blend(t.surface, t.accent2, 0.22f)), onTertiaryContainer = k.text,
@@ -176,8 +186,20 @@ object ThemeEngine {
             progress = ColorMath.fromHsl(h, (sat + 0.15f).coerceIn(0.3f, 0.9f), 0.64f)))
     }
 
-    /** The theme the game pages use: the game's own in Dynamic mode, the saved one otherwise (optionally with the game's accents). */
-    fun forGame(game: AppTheme?): AppTheme {
+    /** Per game: a theme the user assigned to this title (preset or profile id), or null = automatic. */
+    fun assignedId(titleId: String): String? = runCatching { sp().getString("th_game_$titleId", null) }.getOrNull()
+    fun assign(titleId: String, id: String?) { sp().edit().apply { if (id == null) remove("th_game_$titleId") else putString("th_game_$titleId", id) }.apply(); assignedTick++ }
+    /** bumped on every change so the game page recomposes */
+    var assignedTick by mutableStateOf(0); private set
+    fun byId(id: String?): AppTheme? = if (id == null) null else (preset(id) ?: profiles.firstOrNull { it.id == id })
+    fun assignedTheme(titleId: String): AppTheme? { assignedTick; return byId(assignedId(titleId)) }
+
+    /**
+     * The theme the game pages use. Order: a theme the user assigned to this game; the game's own in Dynamic mode; the saved theme
+     * (optionally with the game's accents); otherwise the saved theme. The game page never changes any other screen.
+     */
+    fun forGame(game: AppTheme?, titleId: String = ""): AppTheme {
+        assignedTheme(titleId)?.let { return it }
         val b = base
         if (game == null) return b
         return when {
@@ -189,10 +211,11 @@ object ThemeEngine {
 
     // ------------------------------------------------------------------ JSON (storage + export/import)
     private fun toJson(l: List<AppTheme>) = JSONArray(l.map { toJson(it) })
-    fun toJson(t: AppTheme): JSONObject = JSONObject().put("v", 1).put("id", t.id).put("name", t.name)
+    fun toJson(t: AppTheme): JSONObject = JSONObject().put("v", 2).put("id", t.id).put("name", t.name)
         .put("bg", hex(t.bg)).put("bg2", hex(t.bg2)).put("surface", hex(t.surface)).put("accent", hex(t.accent)).put("accent2", hex(t.accent2))
         .put("text", hex(t.text)).put("text2", hex(t.text2)).put("border", hex(t.border)).put("progress", hex(t.progress))
         .put("gameAccents", t.gameAccents).put("base", t.basePreset ?: JSONObject.NULL)
+        .put("dna", DnaJson.toJson(t.dna)).put("light", t.light?.let { DnaJson.colors(it) } ?: JSONObject.NULL)
     private fun parseList(s: String): List<AppTheme> { val a = JSONArray(s); return (0 until a.length()).mapNotNull { fromJson(a.getJSONObject(it), keepId = true) } }
     /** Strict import: every colour must be a valid hex colour, the name is trimmed, nothing else in the file is read. */
     fun fromJson(o: JSONObject, keepId: Boolean): AppTheme? {
@@ -207,11 +230,12 @@ object ThemeEngine {
         val bd = parseHex(o.optString("border", "")) ?: return null
         val pr = parseHex(o.optString("progress", "")) ?: return null
         val t = AppTheme(if (keepId) o.optString("id", "").ifBlank { newId() } else newId(), name, false, bg, bg2, sf, ac, ac2, tx, tx2, bd, pr,
-            o.optBoolean("gameAccents", false), o.optString("base", "").takeIf { preset(it) != null })
+            o.optBoolean("gameAccents", false), o.optString("base", "").takeIf { preset(it) != null },
+            dna = o.optJSONObject("dna")?.let { DnaJson.fromJson(it) } ?: Dna.CLASSIC, light = o.optJSONObject("light")?.let { DnaJson.colorsOrNull(it) })
         return sanitize(t)
     }
     fun importJson(text: String): AppTheme? {
-        if (text.length > 4000) return null
+        if (text.length > 8000) return null
         val o = runCatching { JSONObject(text.trim()) }.getOrNull() ?: return null
         val t = fromJson(o, keepId = false) ?: return null
         saveProfile(t, false); return t

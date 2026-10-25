@@ -5,6 +5,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -44,25 +46,22 @@ private fun modeHint(m: ThemeMode) = when (m) {
     ThemeMode.DEFAULT -> tr("The standard PS4 Monitor look (Light / Dark / phone colours stay available under Appearance).", "المظهر القياسي للتطبيق (الفاتح/الداكن/ألوان الهاتف متاحة ضمن «المظهر»).")
 }
 
-/** Isolated sample screen: it only reads [t], never real data, and never touches the saved theme. */
+/**
+ * Isolated sample screen: it only reads [t] (already resolved to one appearance), never real data, and never touches the saved theme.
+ * It is built with the same DNA components as the real pages, so the corners, borders, dividers, tabs, progress and typography shown here are the real ones.
+ */
 @Composable fun ThemePreview(t: AppTheme, modifier: Modifier = Modifier) {
-    val k = ThemeEngine.tokens(t)
-    val shape = RoundedCornerShape(20.dp)
-    CompositionLocalProvider(LocalTokens provides k) {
-        MaterialTheme(colorScheme = ThemeEngine.scheme(t), shapes = MaterialTheme.shapes) {
-            Column(modifier.fillMaxWidth().clip(shape).background(Brush.verticalGradient(listOf(k.bg2, k.bg))).border(1.dp, k.border, shape).padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    val k = ThemeEngine.tokens(t); val dna = t.dna
+    CompositionLocalProvider(LocalTokens provides k, LocalDna provides dna) {
+        MaterialTheme(colorScheme = ThemeEngine.scheme(t), typography = dnaTypography(dna), shapes = dnaShapes(dna)) {
+            val shape = dnaShape(20)
+            Column(modifier.fillMaxWidth().clip(shape).background(Brush.verticalGradient(listOf(k.bg2, k.bg))).dnaTexture(dna, k.text, k.accent).dnaBorder(dna, k.border, k.accent, shape)
+                .padding((14 * dna.spacing).dp), verticalArrangement = Arrangement.spacedBy((10 * dna.spacing).dp)) {
                 Column {
                     Text(tr("Sample Game", "لعبة تجريبية"), color = k.text, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     Text("CUSA00000  •  v01.00", color = k.text2, style = MaterialTheme.typography.bodySmall)
                 }
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(k.surface).padding(4.dp)) {
-                    listOf(tr("Details", "التفاصيل"), tr("Captures", "اللقطات"), tr("Trophies", "الإنجازات")).forEachIndexed { i, s ->
-                        Box(Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(if (i == 2) k.accent.copy(alpha = 0.22f) else Color.Transparent).padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                            Lbl(s, color = if (i == 2) k.accent else k.text2, weight = if (i == 2) FontWeight.SemiBold else FontWeight.Normal, style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
-                }
+                SegmentedTabs(listOf(tr("Details", "التفاصيل"), tr("Captures", "اللقطات"), tr("Trophies", "الإنجازات")), 2) { }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     listOf("Ali" to 0, "Sara" to 54, "Omar" to 12).forEach { (n, pct) ->
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -78,12 +77,13 @@ private fun modeHint(m: ThemeMode) = when (m) {
                         }
                     }
                 }
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(k.surface).border(1.dp, k.border, RoundedCornerShape(16.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DnaSurface(radius = 16, raised = true, padding = 12.dp) {
                     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("54%", color = k.text, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.headlineSmall)
                         Text(tr("19 of 35 trophies", "19 من 35 إنجازًا"), color = k.text2, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 3.dp))
                     }
-                    Box(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(k.border)) { Box(Modifier.fillMaxWidth(0.54f).fillMaxHeight().background(k.progress)) }
+                    DnaProgress(0.54f)
+                    DnaRule(Modifier.fillMaxWidth())
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                         listOf(Color(0xFF7FB2E5) to "0/1", Color(0xFFE2B33C) to "1/5", Color(0xFFB4BCC6) to "3/11", Color(0xFFC07A3E) to "15/18").forEach { (c, s) ->
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -92,10 +92,20 @@ private fun modeHint(m: ThemeMode) = when (m) {
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.clip(RoundedCornerShape(12.dp)).background(k.accent).padding(horizontal = 16.dp, vertical = 9.dp)) { Lbl(tr("Refresh", "تحديث"), color = k.onAccent, weight = FontWeight.SemiBold) }
-                    Box(Modifier.clip(RoundedCornerShape(12.dp)).border(1.dp, k.accent2, RoundedCornerShape(12.dp)).padding(horizontal = 16.dp, vertical = 9.dp)) { Lbl(tr("Wake PS4", "إيقاظ"), color = k.accent2) }
+                    Box(Modifier.clip(dnaShape(12)).background(k.accent).padding(horizontal = 16.dp, vertical = 9.dp)) { Lbl(tr("Refresh", "تحديث"), color = k.onAccent, weight = FontWeight.SemiBold) }
+                    Box(Modifier.clip(dnaShape(12)).border(1.dp, k.accent2, dnaShape(12)).padding(horizontal = 16.dp, vertical = 9.dp)) { Lbl(tr("Wake PS4", "إيقاظ"), color = k.accent2) }
                 }
             }
+        }
+    }
+}
+
+/** One independent design layer as a row of chips (corners, border, divider ...). Picking a value changes only that layer. */
+@Composable private fun <E : Enum<E>> LayerRow(label: String, values: Array<E>, cur: E, on: (E) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            values.forEach { v -> FilterChip(v == cur, { on(v) }, label = { Lbl(v.name.lowercase().replace('_', ' ')) }) }
         }
     }
 }
@@ -105,10 +115,10 @@ private fun modeHint(m: ThemeMode) = when (m) {
 }
 
 @Composable private fun ThemeCard(t: AppTheme, active: Boolean, shown: Boolean, onClick: () -> Unit) {
-    val k = ThemeEngine.tokens(t); val shape = RoundedCornerShape(16.dp)
+    val k = ThemeEngine.tokens(t); val shape = shapeOf(t.dna, 16)
     Column(Modifier.width(132.dp).clip(shape).background(Brush.verticalGradient(listOf(k.bg2, k.bg))).border(if (shown) 2.dp else 1.dp, if (shown) k.accent else k.border, shape)
         .clickable(onClick = onClick).padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(Modifier.fillMaxWidth().height(34.dp).clip(RoundedCornerShape(8.dp)).background(k.surface)) {
+        Box(Modifier.fillMaxWidth().height(34.dp).clip(shapeOf(t.dna, 8)).background(k.surface)) {
             Box(Modifier.padding(6.dp).fillMaxWidth(0.55f).height(5.dp).clip(CircleShape).background(k.accent))
             Box(Modifier.align(Alignment.BottomStart).padding(6.dp).fillMaxWidth(0.3f).height(5.dp).clip(CircleShape).background(k.accent2))
         }
@@ -153,13 +163,25 @@ private fun modeHint(m: ThemeMode) = when (m) {
     var confirmReset by remember { mutableStateOf(false) }
     val clip = LocalClipboardManager.current; val ctx = LocalContext.current
     val shown = editing ?: pending
+    val dark = appDark()
+    fun rs(t: AppTheme) = ThemeEngine.resolve(t, dark)      // the theme in the current appearance (light / dark)
+    var editLight by remember { mutableStateOf(!dark) }
     fun activeId(): String? = when (mode) { ThemeMode.PRESET -> ThemeEngine.presetId; ThemeMode.CUSTOM -> ThemeEngine.activeProfileId; ThemeMode.DEFAULT -> "default"; else -> null }
     val ed = editing
 
     LazyColumn(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp), contentPadding = PaddingValues(vertical = 12.dp)) {
         item { BackHeader(tr("Theme", "الثيم"), nav) }
-        item { ThemePreview(shown) }
+        item { ThemePreview(rs(shown)) }
         if (ed == null) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionTitle(tr("Appearance", "المظهر"))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(tr("System", "النظام"), tr("Light", "فاتح"), tr("Dark", "داكن")).forEachIndexed { i, t -> FilterChip(Store.theme.intValue == i, { Store.setTheme(i) }, label = { Lbl(t) }) }
+                    }
+                    Dim(tr("Light / Dark / System works with every theme: each theme has its own light and dark colours. Changing the theme never changes this choice.", "الفاتح والداكن والنظام تعمل مع كل ثيم: لكل ثيم ألوان فاتحة وداكنة خاصة به. تغيير الثيم لا يغيّر هذا الاختيار."))
+                }
+            }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SectionTitle(tr("Theme mode", "نمط الثيم"))
@@ -191,7 +213,7 @@ private fun modeHint(m: ThemeMode) = when (m) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SectionTitle(tr("Ready-made themes", "ثيمات جاهزة"))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        items(ThemeEngine.PRESETS, key = { it.id }) { t -> ThemeCard(t, mode == ThemeMode.PRESET && ThemeEngine.presetId == t.id || mode == ThemeMode.DEFAULT && t.id == "default", pending.id == t.id) { pending = t } }
+                        items(ThemeEngine.PRESETS, key = { it.id }) { t -> ThemeCard(rs(t), mode == ThemeMode.PRESET && ThemeEngine.presetId == t.id || mode == ThemeMode.DEFAULT && t.id == "default", pending.id == t.id) { pending = t } }
                     }
                 }
             }
@@ -206,7 +228,7 @@ private fun modeHint(m: ThemeMode) = when (m) {
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
                             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    Swatches(p)
+                                    Swatches(rs(p))
                                     Text(p.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     if (on) Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) { Lbl(tr("Active", "نشط"), Modifier.padding(horizontal = 10.dp, vertical = 3.dp), MaterialTheme.typography.labelSmall) }
                                 }
@@ -231,16 +253,61 @@ private fun modeHint(m: ThemeMode) = when (m) {
             item { SectionTitle(if (ed.builtin || ThemeEngine.profiles.none { it.id == ed.id }) tr("New profile", "ملف جديد") else tr("Edit profile", "تعديل الملف")) }
             item { OutlinedTextField(ed.name, { editing = ed.copy(name = it.take(32)) }, Modifier.fillMaxWidth(), label = { Text(tr("Profile name", "اسم الملف")) }, singleLine = true, isError = ed.name.isBlank()) }
             item {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(!editLight, { editLight = false }, label = { Lbl(tr("Dark colours", "الألوان الداكنة")) })
+                        FilterChip(editLight, { editLight = true }, label = { Lbl(tr("Light colours", "الألوان الفاتحة")) })
+                    }
+                    Dim(tr("Each appearance has its own colours. Editing colours never changes the design layers below.", "لكل مظهر ألوانه. تعديل الألوان لا يغيّر طبقات التصميم أدناه."))
+                }
+            }
+            item {
+                val set = ed.colorSet(editLight)
                 Panel {
-                    ColorRow(tr("Primary background", "الخلفية الأساسية"), ed.bg) { editing = ed.copy(bg = it) }
-                    ColorRow(tr("Secondary background", "الخلفية الثانوية"), ed.bg2) { editing = ed.copy(bg2 = it) }
-                    ColorRow(tr("Card / surface", "البطاقة / السطح"), ed.surface) { editing = ed.copy(surface = it) }
-                    ColorRow(tr("Primary accent", "لون التمييز الأساسي"), ed.accent) { editing = ed.copy(accent = it) }
-                    ColorRow(tr("Secondary accent", "لون التمييز الثانوي"), ed.accent2) { editing = ed.copy(accent2 = it) }
-                    ColorRow(tr("Primary text", "النص الأساسي"), ed.text) { editing = ed.copy(text = it) }
-                    ColorRow(tr("Secondary text", "النص الثانوي"), ed.text2) { editing = ed.copy(text2 = it) }
-                    ColorRow(tr("Borders", "الحدود"), ed.border) { editing = ed.copy(border = it) }
-                    ColorRow(tr("Progress", "التقدّم"), ed.progress) { editing = ed.copy(progress = it) }
+                    ColorRow(tr("Primary background", "الخلفية الأساسية"), set.bg) { editing = ed.withSet(editLight, set.copy(bg = it)) }
+                    ColorRow(tr("Secondary background", "الخلفية الثانوية"), set.bg2) { editing = ed.withSet(editLight, set.copy(bg2 = it)) }
+                    ColorRow(tr("Card / surface", "البطاقة / السطح"), set.surface) { editing = ed.withSet(editLight, set.copy(surface = it)) }
+                    ColorRow(tr("Primary accent", "لون التمييز الأساسي"), set.accent) { editing = ed.withSet(editLight, set.copy(accent = it)) }
+                    ColorRow(tr("Secondary accent", "لون التمييز الثانوي"), set.accent2) { editing = ed.withSet(editLight, set.copy(accent2 = it)) }
+                    ColorRow(tr("Primary text", "النص الأساسي"), set.text) { editing = ed.withSet(editLight, set.copy(text = it)) }
+                    ColorRow(tr("Secondary text", "النص الثانوي"), set.text2) { editing = ed.withSet(editLight, set.copy(text2 = it)) }
+                    ColorRow(tr("Borders", "الحدود"), set.border) { editing = ed.withSet(editLight, set.copy(border = it)) }
+                    ColorRow(tr("Progress", "التقدّم"), set.progress) { editing = ed.withSet(editLight, set.copy(progress = it)) }
+                }
+            }
+            item {
+                val warn = ThemeEngine.warnings(ed, editLight)
+                if (warn.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(tr("Poor contrast in these colours (adjusted automatically when you save):", "تباين ضعيف في هذه الألوان (يُعدَّل تلقائيًا عند الحفظ):"), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelLarge)
+                    warn.forEach { Dim(it) }
+                }
+            }
+            item {
+                val dn = ed.dna
+                Panel {
+                    SectionTitle(tr("Design", "التصميم"))
+                    Dim(tr("Independent layers: mix them freely, or copy the whole design of another theme.", "طبقات مستقلة: امزجها بحرية أو انسخ تصميم ثيم آخر كاملًا."))
+                    Text(tr("Copy the design of", "نسخ تصميم"), style = MaterialTheme.typography.labelLarge)
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ThemeEngine.PRESETS.forEach { p -> FilterChip(dn == p.dna, { editing = ed.copy(dna = p.dna) }, label = { Lbl(p.name) }) }
+                    }
+                    LayerRow(tr("Corners", "الزوايا"), Corner.values(), dn.shape.corner) { editing = ed.copy(dna = dn.copy(shape = dn.shape.copy(corner = it))) }
+                    LayerRow(tr("Border", "الحدود"), BorderKind.values(), dn.border.kind) { editing = ed.copy(dna = dn.copy(border = dn.border.copy(kind = it))) }
+                    LayerRow(tr("Divider", "الفاصل"), RuleKind.values(), dn.rule) { editing = ed.copy(dna = dn.copy(rule = it)) }
+                    LayerRow(tr("Surface", "السطح"), SurfaceKind.values(), dn.surface) { editing = ed.copy(dna = dn.copy(surface = it)) }
+                    LayerRow(tr("Texture", "الملمس"), TextureKind.values(), dn.texture.kind) { k -> editing = ed.copy(dna = dn.copy(texture = dn.texture.copy(kind = k, intensity = if (k == TextureKind.NONE) 0f else maxOf(dn.texture.intensity, 0.6f)))) }
+                    LayerRow(tr("Tabs", "التبويبات"), TabKind.values(), dn.tabs) { editing = ed.copy(dna = dn.copy(tabs = it)) }
+                    LayerRow(tr("Progress", "التقدّم"), ProgressKind.values(), dn.progress) { editing = ed.copy(dna = dn.copy(progress = it)) }
+                    LayerRow(tr("Game header", "ترويسة اللعبة"), HeroKind.values(), dn.hero) { editing = ed.copy(dna = dn.copy(hero = it)) }
+                    LayerRow(tr("Title font", "خط العناوين"), FontKind.values(), dn.type.title) { editing = ed.copy(dna = dn.copy(type = dn.type.copy(title = it))) }
+                    LayerRow(tr("Body font", "خط النص"), FontKind.values(), dn.type.body) { editing = ed.copy(dna = dn.copy(type = dn.type.copy(body = it))) }
+                    Text(tr("Ornaments (game header)", "الزخارف (ترويسة اللعبة)"), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OrnamentKind.values().forEach { k ->
+                            val on = dn.ornaments.any { it.kind == k }
+                            FilterChip(on, { editing = ed.copy(dna = dn.copy(ornaments = if (on) dn.ornaments.filter { it.kind != k } else dn.ornaments + OrnamentDna(k, 1f, 0.5f))) }, label = { Lbl(k.name.lowercase().replace('_', ' ')) })
+                        }
+                    }
                 }
             }
             item { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -251,7 +318,7 @@ private fun modeHint(m: ThemeMode) = when (m) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(enabled = ed.name.isNotBlank(), onClick = { ThemeEngine.saveProfile(ed, true); pending = ThemeEngine.base; editing = null }) { Lbl(tr("Save and apply", "حفظ وتطبيق")) }
                     OutlinedButton(onClick = { editing = null }) { Lbl(tr("Discard changes", "تجاهل التغييرات")) }
-                    ThemeEngine.preset(ed.basePreset)?.let { b -> TextButton(onClick = { editing = ed.copy(bg = b.bg, bg2 = b.bg2, surface = b.surface, accent = b.accent, accent2 = b.accent2, text = b.text, text2 = b.text2, border = b.border, progress = b.progress) }) { Lbl(tr("Restore “${b.name}” values", "استعادة قيم «${b.name}»")) } }
+                    ThemeEngine.preset(ed.basePreset)?.let { b -> TextButton(onClick = { editing = ed.copy(bg = b.bg, bg2 = b.bg2, surface = b.surface, accent = b.accent, accent2 = b.accent2, text = b.text, text2 = b.text2, border = b.border, progress = b.progress, light = b.light, dna = b.dna) }) { Lbl(tr("Restore “${b.name}” values", "استعادة قيم «${b.name}»")) } }
                 }
             }
         }

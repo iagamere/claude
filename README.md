@@ -1,3 +1,14 @@
+# PS4 Download Monitor 6.6.0 (Design DNA, phase 1, NOT compiled)
+
+## Design DNA
+- A theme is now colours (a dark set + an optional hand-made light set) **plus independent design layers** (`DnaCore.kt`): corners, border, divider, surface, texture, ornaments, typography, spacing, game-header composition, tab style, progress style.
+- **Appearance (System / Light / Dark) is independent of the theme.** Every preset / profile / game theme has a dark and a light set (hand-made for Ghost of Tsushima and Hollow Knight, derived automatically for the others and for user profiles). Settings > Appearance and Settings > Theme both expose it.
+- `DnaKit.kt`: `DnaSurface` (Panel), `DnaRule`, `DnaProgress`, `SegmentedTabs`, `SectionHeader`, `dnaShapes`, `dnaTypography`, procedural texture / ornaments (seeded, cached, capped). `DnaJson.kt`: strict storage / import format.
+- New presets: **Ghost of Tsushima** (ivory paper, ink, muted gold; square double-ruled cards, brush dividers and progress, framed header with seigaiha band and ginkgo leaves) and **Hollow Knight** (abyssal blue / pale bone; large soft corners with a glowing hairline, glass surfaces, spores and light shafts, glow progress).
+- Per game: game page > Details > "Theme for this game" assigns any preset or profile to that game only. Editor: colours per appearance, contrast warnings, and every design layer can be mixed freely or copied from another theme.
+- Not yet done (phase 2/3): local artwork analyser that produces a DNA from a cover, optional vision-model layer, bundled fonts (system serif / sans only for now), restyling of Home / Downloads / Browser layouts beyond Panel, shapes and colours.
+- Tests: `app/src/test/.../DnaTest.kt` (JUnit). The colour / structure tests were run on a plain JVM here; the JSON tests were not run (no org.json here). The Android app was NOT built.
+
 # PS4 Download Monitor 6.1.0 (UI redesign, not compiled)
 
 ## Theme system
