@@ -163,7 +163,36 @@ object ThemeEngine {
 
     // ------------------------------------------------------------------ game themes
     private val gameCache = ConcurrentHashMap<String, AppTheme>()
+    private val gameFp = ConcurrentHashMap<String, Long>()
+    private val genReports = ConcurrentHashMap<String, List<Pair<String, Float>>>()
     fun cachedGame(titleId: String): AppTheme? = gameCache[titleId]
+    /** value of [assign] meaning "the design generated from this game's own artwork" */
+    const val COVER = "cover"
+    /** the measurements behind the generated design of this game (for the "why this design" panel) */
+    fun reportFor(titleId: String): List<Pair<String, Float>>? = genReports[titleId]
+
+    /** The design generated from this game's artwork, if it was already computed for exactly this artwork + analyser version (memory, then storage). */
+    fun generatedFor(titleId: String, fp: Long): AppTheme? {
+        gameCache[titleId]?.let { if (gameFp[titleId] == fp) return it }
+        val s = runCatching { sp().getString("th_gen_$titleId", null) }.getOrNull() ?: return null
+        return runCatching {
+            val o = JSONObject(s)
+            if (o.optLong("fp") != fp) return null
+            val t = fromJson(o.getJSONObject("theme"), true)?.copy(id = "game:$titleId", name = "Auto design", builtin = true) ?: return null
+            gameCache[titleId] = t; gameFp[titleId] = fp
+            o.optJSONObject("report")?.let { r -> genReports[titleId] = r.keys().asSequence().map { it to r.getDouble(it).toFloat() }.toList() }
+            t
+        }.getOrNull()
+    }
+    /** Turns a generated design into a theme, caches it in memory and in storage (colours, design layers and the measurements), keyed by the artwork fingerprint. */
+    fun storeGenerated(titleId: String, fp: Long, g: GeneratedDesign): AppTheme {
+        val d = g.dark
+        val t = sanitize(AppTheme("game:$titleId", "Auto design", true, d.bg, d.bg2, d.surface, d.accent, d.accent2, d.text, d.text2, d.border, d.progress, dna = g.dna, light = g.light))
+        val rep = g.profile.report()
+        gameCache[titleId] = t; gameFp[titleId] = fp; genReports[titleId] = rep
+        runCatching { sp().edit().putString("th_gen_$titleId", JSONObject().put("fp", fp).put("theme", toJson(t)).put("report", JSONObject().also { r -> rep.forEach { (k, v) -> r.put(k, v.toDouble()) } }).toString()).apply() }
+        return t
+    }
 
     /**
      * Builds a coordinated theme from a cover analysis (see [CoverPalette.analyze]): background and surfaces are very dark
@@ -192,7 +221,7 @@ object ThemeEngine {
     /** bumped on every change so the game page recomposes */
     var assignedTick by mutableStateOf(0); private set
     fun byId(id: String?): AppTheme? = if (id == null) null else (preset(id) ?: profiles.firstOrNull { it.id == id })
-    fun assignedTheme(titleId: String): AppTheme? { assignedTick; return byId(assignedId(titleId)) }
+    fun assignedTheme(titleId: String): AppTheme? { assignedTick; val id = assignedId(titleId); return if (id == COVER) cachedGame(titleId) else byId(id) }
 
     /**
      * The theme the game pages use. Order: a theme the user assigned to this game; the game's own in Dynamic mode; the saved theme

@@ -88,14 +88,28 @@ import kotlinx.coroutines.withContext
     }
 }
 
-/** Colours of the game's cover -> a coordinated theme. Analysed once per game (48x48 sample) off the main thread, then cached in [ThemeEngine]. */
-@Composable private fun rememberGameTheme(titleId: String, cover: Bitmap?): AppTheme? {
-    val t by produceState<AppTheme?>(ThemeEngine.cachedGame(titleId), titleId, cover) {
-        if (value == null && cover != null) value = withContext(Dispatchers.Default) {
+/**
+ * The game's artwork (banner + cover) -> a complete design (colours for both appearances + shape / border / divider / texture / ornament /
+ * typography / composition layers). Analysed locally and off the main thread; reused from the cache while the artwork is unchanged.
+ */
+@Composable private fun rememberGameTheme(titleId: String, icon: Bitmap?, banner: Bitmap?): AppTheme? {
+    val t by produceState<AppTheme?>(ThemeEngine.cachedGame(titleId), titleId, icon, banner) {
+        if (icon == null && banner == null) return@produceState
+        value = withContext(Dispatchers.Default) {
             runCatching {
-                val sm = Bitmap.createScaledBitmap(cover, 48, 48, true)
-                val px = IntArray(48 * 48); sm.getPixels(px, 0, 48, 0, 0, 48, 48)
-                ThemeEngine.fromCover(titleId, CoverPalette.analyze(px))
+                val rs = ArrayList<Raster>(); val ws = ArrayList<Float>()
+                fun add(b: Bitmap?, w: Float) {
+                    if (b == null || b.width < 4 || b.height < 4) return
+                    val s = 192f / maxOf(b.width, b.height)
+                    val sm = if (s < 1f) Bitmap.createScaledBitmap(b, maxOf(1, (b.width * s).toInt()), maxOf(1, (b.height * s).toInt()), true) else b
+                    val px = IntArray(sm.width * sm.height); sm.getPixels(px, 0, sm.width, 0, 0, sm.width, sm.height)
+                    for (i in px.indices) px[i] = if ((px[i] ushr 24) < 128) 0xFF808080.toInt() else px[i] or (0xFF shl 24)
+                    rs.add(Raster(sm.width, sm.height, px)); ws.add(w)
+                }
+                add(banner, 0.6f); add(icon, 0.4f)
+                if (rs.isEmpty()) return@runCatching null
+                val fp = ArtAnalyzer.fingerprint(rs)
+                ThemeEngine.generatedFor(titleId, fp) ?: ThemeEngine.storeGenerated(titleId, fp, DnaGenerator.generate(ArtAnalyzer.analyze(rs, ws)))
             }.getOrNull()
         }
     }
@@ -124,7 +138,7 @@ import kotlinx.coroutines.withContext
     val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
     // theme: a theme assigned to this game wins; Dynamic mode = the game's own; Preset / Custom = the saved theme (optionally with the game's accents);
     // App default = the app's current scheme. The appearance (light / dark / system) is applied on top of whichever theme this is.
-    val gameTheme = rememberGameTheme(g.titleId, icon)
+    val gameTheme = rememberGameTheme(g.titleId, icon, banner)
     val assigned = ThemeEngine.assignedTheme(g.titleId)
     val dark = appDark()
     val shown = if (ThemeEngine.mode == ThemeMode.DEFAULT && assigned == null) null else ThemeEngine.resolve(ThemeEngine.forGame(gameTheme, g.titleId), dark)
@@ -142,7 +156,7 @@ import kotlinx.coroutines.withContext
                 if (tab == 2) Box(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) { TrophiesTab(ps4, g) }
                 if (tab == 0) Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     DnaSurface { rows.forEachIndexed { i, (k, v) -> if (i > 0) DnaRule(Modifier.fillMaxWidth()); InfoRow(k, v) } }
-                    GameThemePicker(g.titleId)
+                    GameThemePicker(g.titleId, g.title, gameTheme)
                     FilledTonalButton(shape = dnaShape(14), onClick = { clip.setText(AnnotatedString(g.titleId)); Toast.makeText(ctx, tr("Copied", "تم النسخ"), Toast.LENGTH_SHORT).show() }) {
                         Ico(R.drawable.ic_copy, 18.dp); Spacer(Modifier.width(6.dp)); Lbl(tr("Copy title ID", "نسخ معرّف اللعبة"))
                     }

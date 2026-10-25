@@ -387,16 +387,43 @@ fun Modifier.dnaBorder(d: Dna, line: Color, glow: Color, shape: Shape): Modifier
     }
 }
 
-/** Lets the user assign any preset / profile to one game, or go back to automatic. Only visual: nothing about the game or the console changes. */
-@Composable fun GameThemePicker(titleId: String) {
-    val cur = ThemeEngine.assignedTheme(titleId)?.id
+private fun styleLabel(n: String) = when (n) {
+    "PAPER" -> tr("Ink & paper", "حبر وورق"); "LUMINOUS" -> tr("Luminous, painted", "مضيء ومرسوم"); "DRAMATIC" -> tr("Dark & dramatic", "داكن ودرامي")
+    "NEON" -> tr("Neon", "نيون"); "MINIMAL" -> tr("Minimal", "بسيط"); "SOFT" -> tr("Soft & light", "ناعم وفاتح"); else -> n
+}
+
+/**
+ * Lets the user choose the design of one game: automatic (follows the theme mode), the design generated from the game's own artwork, or any preset / profile.
+ * Only visual: nothing about the game or the console changes. [gen] is the generated design (null while it is being computed).
+ */
+@Composable fun GameThemePicker(titleId: String, gameName: String, gen: AppTheme?) {
+    ThemeEngine.assignedTheme(titleId)
+    val cur = ThemeEngine.assignedId(titleId)
     val all = ThemeEngine.PRESETS + ThemeEngine.profiles
+    var saved by remember(titleId) { mutableStateOf(false) }
     DnaSurface {
         SectionTitle(tr("Theme for this game", "ثيم هذه اللعبة"))
         Dim(tr("Only this game's pages use it. “Auto” follows the theme mode chosen in Settings.", "تستخدمه صفحات هذه اللعبة فقط. «تلقائي» يتبع نمط الثيم المختار في الإعدادات."))
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(cur == null, { ThemeEngine.assign(titleId, null) }, label = { Lbl(tr("Auto", "تلقائي")) })
+            FilterChip(cur == ThemeEngine.COVER, { ThemeEngine.assign(titleId, ThemeEngine.COVER) }, enabled = gen != null, label = { Lbl(tr("From this game's artwork", "من فن هذه اللعبة")) })
             all.forEach { t -> FilterChip(cur == t.id, { ThemeEngine.assign(titleId, t.id) }, label = { Lbl(t.name) }) }
+        }
+        val rep = if (gen != null) ThemeEngine.reportFor(titleId)?.toMap() else null
+        if (gen != null && rep != null) {
+            DnaRule(Modifier.fillMaxWidth())
+            Text(tr("Design analysis (on this phone, no internet)", "تحليل التصميم (على الهاتف دون إنترنت)"), style = MaterialTheme.typography.labelLarge)
+            val top = ArtStyle.values().map { it.name to (rep[it.name] ?: 0f) }.filter { it.second >= 0.35f }.sortedByDescending { it.second }
+            Dim(if (top.isEmpty()) tr("No dominant style was found, so a neutral design was used.", "لم يُعثر على طابع غالب فاستُخدم تصميم محايد.")
+                else tr("Style: ", "الطابع: ") + top.joinToString(" + ") { styleLabel(it.first) + " " + (it.second * 100).toInt() + "%" })
+            fun pc(k: String) = ((rep[k] ?: 0f) * 100).toInt()
+            Dim(tr("Light ${pc("light")}%  ·  dark ${pc("dark")}%  ·  colourful ${pc("colorful")}%  ·  empty space ${pc("flat")}%",
+                "الفاتح ${pc("light")}٪  ·  الداكن ${pc("dark")}٪  ·  الملوّن ${pc("colorful")}٪  ·  الفراغ ${pc("flat")}٪"))
+            Dim(tr("Motifs (leaves, waves, chains) and the logo's font are not recognised locally: use a preset or an imported design for those.",
+                "الزخارف (أوراق، أمواج، سلاسل) وخط الشعار لا تُعرَف محلياً: استخدم ثيماً جاهزاً أو تصميماً مستورداً لها."))
+            OutlinedButton(onClick = { ThemeEngine.saveProfile(gen.copy(id = ThemeEngine.newId(), name = gameName.take(22) + " design", builtin = false, basePreset = null), false); saved = true }, enabled = !saved) {
+                Lbl(if (saved) tr("Saved in Settings > Theme", "حُفظ في الإعدادات ← الثيم") else tr("Save this design as a profile", "احفظ هذا التصميم كملف"))
+            }
         }
     }
 }

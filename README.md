@@ -1,3 +1,11 @@
+# PS4 Download Monitor 6.7.0 (Design DNA, phase 2: local artwork analyser)
+
+- `ArtAnalyzer.kt` (pure Kotlin): measures an artwork on a 160 px copy: lightness / chroma distribution, negative space, edge density, glow, the salient accent hues (chroma-weighted, so a small gold band or fire counts) and the ground tones. Six style scores (PAPER, LUMINOUS, DRAMATIC, NEON, MINIMAL, SOFT) are built only from hue-independent measurements.
+- `DnaGenerator.kt` (pure Kotlin): decides every design layer separately from those scores (corners, border, divider, surface, texture, ornaments, fonts, spacing, header, tabs, progress) and builds a dark and a light colour set (the light one follows the artwork's real light tones, e.g. ivory paper, when it has them).
+- The game page now analyses banner + cover together (off the main thread), caches the result in memory and in storage (key = artwork fingerprint + analyser version, so it is recomputed only when the artwork or the analyser changes). Dynamic mode uses it; any game can pick "From this game's artwork" in Details > Theme for this game, see the measurements ("why this design") and save the design as a profile.
+- Limits: no motif recognition (leaves, waves, chains) and no logo-font recognition locally; those come from presets, imported JSON or the future visual layer. Fonts are system serif / sans / condensed.
+- Tests: `ArtAnalyzerTest` (real covers in `src/test/resources/covers`) - 12 tests run on a plain JVM here, all pass; the Android app itself was not built here.
+
 # PS4 Download Monitor 6.6.0 (Design DNA, phase 1; 2 compile errors fixed after the first CI run)
 
 ## Design DNA
