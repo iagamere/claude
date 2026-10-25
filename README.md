@@ -1,3 +1,13 @@
+# PS4 Download Monitor 6.8.0 (Design DNA, phase 2.5: the game's type decides the motifs)
+
+- Problem fixed: designs were chosen only from the artwork, so many covers fell into the same few looks recoloured (a light football cover got the samurai paper look in green).
+- `GameTraits.kt` (pure): 18 game-type tags (sports, racing, fighting, shooter, horror, fantasy, dark fantasy, samurai, sci-fi, cyberpunk, space, pixel, anime, adventure, strategy, survival, family, nautical) from title keywords (offline) and from the first sentences of the game's encyclopedia entry (`GameGenre.kt`, online, optional: Settings > Theme > "Detect the game type online"; only the game name is sent, once, then cached 6 months).
+- `DnaGenerator.kt`: one kit per type (shape, border, divider, texture, motifs, fonts, tabs, progress); the artwork still decides colours (dark + light), mood and spacing. A strong type replaces the structural layers, a secondary type adds one motif.
+- `DnaKit.kt`: new procedural motifs (pitch lines, speed stripes, checker strip, hex grid, circuit, claw scratches, halftone, pixel blocks, starfield, contours, waves), slanted cards and tabs, striped progress, flourish corners, wave / pixel / pitch / stripe dividers, diagonal / hex / star / pixel textures. All drawn with Canvas, seeded, clipped to the header and capped.
+- Fonts (SIL OFL, licences in assets/licenses): Bebas Neue (sports / fighting / shooter / survival), Cinzel (fantasy / horror / strategy / nautical), Orbitron (racing / sci-fi / space / cyberpunk), Press Start 2P (pixel). Arabic text keeps the system face.
+- "Theme for this game" now shows the detected type and the measurements ("why this design").
+- Tests: `GenreTest` + `ArtAnalyzerTest` (21 tests, all pass on a plain JVM here; the Android app and the online lookup were NOT run here).
+
 # PS4 Download Monitor 6.7.0 (Design DNA, phase 2: local artwork analyser)
 
 - `ArtAnalyzer.kt` (pure Kotlin): measures an artwork on a 160 px copy: lightness / chroma distribution, negative space, edge density, glow, the salient accent hues (chroma-weighted, so a small gold band or fire counts) and the ground tones. Six style scores (PAPER, LUMINOUS, DRAMATIC, NEON, MINIMAL, SOFT) are built only from hue-independent measurements.

@@ -10,16 +10,20 @@ package com.abdo.ps4monitor
  * The 'appearance' (light / dark / system) is NOT part of the DNA: it only picks which colour set is shown.
  */
 
-enum class Corner { ROUND, CUT, SQUARE }
-enum class BorderKind { NONE, SINGLE, DOUBLE, BRACKETS, GLOW }
-enum class RuleKind { HAIRLINE, BRUSH, DIAMOND, GLOW, TECH }
+enum class Corner { ROUND, CUT, SQUARE, SLANT }
+enum class BorderKind { NONE, SINGLE, DOUBLE, BRACKETS, GLOW, FLOURISH }
+enum class RuleKind { HAIRLINE, BRUSH, DIAMOND, GLOW, TECH, STRIPES, WAVE, PIXEL, PITCH }
 enum class SurfaceKind { SOLID, GRADIENT, GLASS }
-enum class TextureKind { NONE, PAPER, PARTICLES, GRID }
-enum class OrnamentKind { SEIGAIHA_BAND, GINKGO, BRUSH_SWEEP, SPORES, LIGHT_RAYS }
+enum class TextureKind { NONE, PAPER, PARTICLES, GRID, DIAGONAL, HEX, STARS, PIXELS }
+enum class OrnamentKind {
+    SEIGAIHA_BAND, GINKGO, BRUSH_SWEEP, SPORES, LIGHT_RAYS,
+    PITCH_LINES, SPEED_STRIPES, CHECKER_STRIP, HEX_GRID, CIRCUIT, SCRATCHES, HALFTONE, PIXEL_BLOCKS, STARFIELD, CONTOURS, WAVES
+}
 enum class HeroKind { FADE, FRAMED }
-enum class TabKind { PILL, UNDERLINE, CUT }
-enum class ProgressKind { BAR, BRUSH, TICKS, GLOW }
-enum class FontKind { DEFAULT, SANS, SERIF, CONDENSED }
+enum class TabKind { PILL, UNDERLINE, CUT, SLANT }
+enum class ProgressKind { BAR, BRUSH, TICKS, GLOW, STRIPED }
+/** DISPLAY = Bebas Neue, ROMAN = Cinzel, TECH = Orbitron, PIXEL = Press Start 2P (all SIL OFL, bundled); the others are system faces. */
+enum class FontKind { DEFAULT, SANS, SERIF, CONDENSED, DISPLAY, ROMAN, TECH, PIXEL }
 
 /** [scale] multiplies the nominal radius of rounded corners; [radius] is the fixed radius (dp) of square corners. */
 data class ShapeDna(val corner: Corner = Corner.ROUND, val scale: Float = 1f, val radius: Int = 4)

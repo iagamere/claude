@@ -92,10 +92,11 @@ import kotlinx.coroutines.withContext
  * The game's artwork (banner + cover) -> a complete design (colours for both appearances + shape / border / divider / texture / ornament /
  * typography / composition layers). Analysed locally and off the main thread; reused from the cache while the artwork is unchanged.
  */
-@Composable private fun rememberGameTheme(titleId: String, icon: Bitmap?, banner: Bitmap?): AppTheme? {
-    val t by produceState<AppTheme?>(ThemeEngine.cachedGame(titleId), titleId, icon, banner) {
+@Composable private fun rememberGameTheme(titleId: String, title: String, icon: Bitmap?, banner: Bitmap?): AppTheme? {
+    val online = ThemeEngine.onlineGenre
+    val t by produceState<AppTheme?>(ThemeEngine.cachedGame(titleId), titleId, icon, banner, online) {
         if (icon == null && banner == null) return@produceState
-        value = withContext(Dispatchers.Default) {
+        val built = withContext(Dispatchers.Default) {
             runCatching {
                 val rs = ArrayList<Raster>(); val ws = ArrayList<Float>()
                 fun add(b: Bitmap?, w: Float) {
@@ -107,10 +108,19 @@ import kotlinx.coroutines.withContext
                     rs.add(Raster(sm.width, sm.height, px)); ws.add(w)
                 }
                 add(banner, 0.6f); add(icon, 0.4f)
-                if (rs.isEmpty()) return@runCatching null
-                val fp = ArtAnalyzer.fingerprint(rs)
-                ThemeEngine.generatedFor(titleId, fp) ?: ThemeEngine.storeGenerated(titleId, fp, DnaGenerator.generate(ArtAnalyzer.analyze(rs, ws)))
+                if (rs.isEmpty()) null else Triple(rs, ws, ArtAnalyzer.fingerprint(rs))
             }.getOrNull()
+        } ?: return@produceState
+        fun design(tags: Map<Tag, Float>): AppTheme? = runCatching {
+            val fp = built.third xor (GenreClassifier.key(tags) * 31L)
+            ThemeEngine.generatedFor(titleId, fp) ?: ThemeEngine.storeGenerated(titleId, fp, DnaGenerator.generate(ArtAnalyzer.analyze(built.first, built.second), tags))
+        }.getOrNull()
+        val local = GameGenre.local(title)
+        val cached = GameGenre.cached(titleId)
+        value = withContext(Dispatchers.Default) { design(GenreClassifier.merge(local, cached ?: emptyMap())) }
+        if (cached == null && online) {
+            val fetched = GameGenre.fetch(titleId, title)
+            if (fetched.isNotEmpty()) value = withContext(Dispatchers.Default) { design(GenreClassifier.merge(local, fetched)) } ?: value
         }
     }
     return t
@@ -138,7 +148,7 @@ import kotlinx.coroutines.withContext
     val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
     // theme: a theme assigned to this game wins; Dynamic mode = the game's own; Preset / Custom = the saved theme (optionally with the game's accents);
     // App default = the app's current scheme. The appearance (light / dark / system) is applied on top of whichever theme this is.
-    val gameTheme = rememberGameTheme(g.titleId, icon, banner)
+    val gameTheme = rememberGameTheme(g.titleId, g.title, icon, banner)
     val assigned = ThemeEngine.assignedTheme(g.titleId)
     val dark = appDark()
     val shown = if (ThemeEngine.mode == ThemeMode.DEFAULT && assigned == null) null else ThemeEngine.resolve(ThemeEngine.forGame(gameTheme, g.titleId), dark)

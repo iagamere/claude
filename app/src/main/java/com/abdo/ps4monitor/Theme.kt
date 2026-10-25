@@ -66,6 +66,8 @@ object ThemeEngine {
     var profiles by mutableStateOf<List<AppTheme>>(emptyList()); private set
     /** optional: keep the chosen global theme but take the current game's accent colours */
     var applyGameAccents by mutableStateOf(false); private set
+    /** may the app look the game's name up online to learn its type (sports, racing, horror ...)? Only the name is sent. */
+    var onlineGenre by mutableStateOf(true); private set
 
     /** The saved choice, without any game-specific adaptation. */
     val base: AppTheme get() = when (mode) {
@@ -79,6 +81,7 @@ object ThemeEngine {
         presetId = sp.getString("th_preset", "default") ?: "default"
         activeProfileId = sp.getString("th_profile", null)
         applyGameAccents = sp.getBoolean("th_gameaccent", false)
+        onlineGenre = sp.getBoolean("th_online", true)
         profiles = runCatching { parseList(sp.getString("th_profiles", "[]")!!) }.getOrDefault(emptyList())
         if (mode == ThemeMode.CUSTOM && profiles.none { it.id == activeProfileId }) mode = ThemeMode.DEFAULT
     }
@@ -86,6 +89,7 @@ object ThemeEngine {
     fun chooseMode(m: ThemeMode) { mode = m; sp().edit().putString("th_mode", m.name).apply() }
     fun selectPreset(id: String) { if (preset(id) == null) return; presetId = id; chooseMode(ThemeMode.PRESET); sp().edit().putString("th_preset", id).apply() }
     fun selectProfile(id: String) { if (profiles.none { it.id == id }) return; activeProfileId = id; chooseMode(ThemeMode.CUSTOM); sp().edit().putString("th_profile", id).apply() }
+    fun setOnlineGenre(b: Boolean) { onlineGenre = b; sp().edit().putBoolean("th_online", b).apply() }
     fun setGameAccents(b: Boolean) { applyGameAccents = b; sp().edit().putBoolean("th_gameaccent", b).apply() }
     fun resetToDefault() { presetId = "default"; chooseMode(ThemeMode.DEFAULT); sp().edit().putString("th_preset", "default").apply() }
 
@@ -188,7 +192,7 @@ object ThemeEngine {
     fun storeGenerated(titleId: String, fp: Long, g: GeneratedDesign): AppTheme {
         val d = g.dark
         val t = sanitize(AppTheme("game:$titleId", "Auto design", true, d.bg, d.bg2, d.surface, d.accent, d.accent2, d.text, d.text2, d.border, d.progress, dna = g.dna, light = g.light))
-        val rep = g.profile.report()
+        val rep = g.report()
         gameCache[titleId] = t; gameFp[titleId] = fp; genReports[titleId] = rep
         runCatching { sp().edit().putString("th_gen_$titleId", JSONObject().put("fp", fp).put("theme", toJson(t)).put("report", JSONObject().also { r -> rep.forEach { (k, v) -> r.put(k, v.toDouble()) } }).toString()).apply() }
         return t

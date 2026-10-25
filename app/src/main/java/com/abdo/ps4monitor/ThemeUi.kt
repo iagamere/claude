@@ -183,6 +183,16 @@ private fun modeHint(m: ThemeMode) = when (m) {
                 }
             }
             item {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text(tr("Detect the game type online", "تحديد نوع اللعبة عبر الإنترنت"))
+                        Dim(tr("Looks up the game's name in an online encyclopedia once, so sports, racing, horror, fantasy ... games get their own motifs. Only the name is sent. Off = the name and the artwork only.",
+                            "يبحث عن اسم اللعبة مرة واحدة في موسوعة على الإنترنت لتحصل ألعاب الرياضة والسباق والرعب والفانتازيا على زخارفها الخاصة. يُرسَل الاسم فقط. عند الإيقاف: الاسم والغلاف فقط."))
+                    }
+                    Switch(ThemeEngine.onlineGenre, { ThemeEngine.setOnlineGenre(it) })
+                }
+            }
+            item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SectionTitle(tr("Theme mode", "نمط الثيم"))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
