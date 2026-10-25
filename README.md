@@ -1,4 +1,4 @@
-# PS4 Download Monitor 6.6.0 (Design DNA, phase 1, NOT compiled)
+# PS4 Download Monitor 6.6.0 (Design DNA, phase 1; 2 compile errors fixed after the first CI run)
 
 ## Design DNA
 - A theme is now colours (a dark set + an optional hand-made light set) **plus independent design layers** (`DnaCore.kt`): corners, border, divider, surface, texture, ornaments, typography, spacing, game-header composition, tab style, progress style.

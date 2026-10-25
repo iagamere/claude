@@ -11,6 +11,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.drawOutline
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.text.font.FontFamily
@@ -54,7 +56,7 @@ val LocalDna = compositionLocalOf { Dna.CLASSIC }
 @Composable fun appDark(): Boolean = when (Store.theme.intValue) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
 
 // ------------------------------------------------------------------ shapes and typography
-fun shapeOf(d: Dna, r: Int): Shape = when (d.shape.corner) {
+fun shapeOf(d: Dna, r: Int): CornerBasedShape = when (d.shape.corner) {
     Corner.ROUND -> RoundedCornerShape((r * d.shape.scale).dp)
     Corner.CUT -> CutCornerShape((r * 0.6f * d.shape.scale).coerceAtLeast(6f).dp)
     Corner.SQUARE -> RoundedCornerShape(minOf(r, d.shape.radius).dp)
