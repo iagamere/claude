@@ -92,7 +92,7 @@ private sealed class FilesState { object Loading : FilesState(); class Ok(val it
     Card(Modifier.fillMaxWidth().clip(shape).combinedClickable(onClick = onClick, onLongClick = onLong), shape = shape,
         colors = CardDefaults.cardColors(containerColor = if (selected == true) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.padding(start = 12.dp, top = 10.dp, bottom = 10.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(48.dp).clip(dnaShape(12)).background(MaterialTheme.colorScheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
                 val b = th?.bmp
                 if (selected == true) Ico(R.drawable.ic_check, 24.dp, MaterialTheme.colorScheme.primary)
                 else if (b != null) Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
@@ -212,7 +212,7 @@ private sealed class FilesState { object Loading : FilesState(); class Ok(val it
             Row(Modifier.padding(start = 14.dp, top = 8.dp, bottom = 8.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(opsLabel, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium)
-                    LinearProgressIndicator(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)))
+                    LinearProgressIndicator(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)))   // fixed-shape: hairline bar
                 }
                 TextButton(onClick = { Ops.cancel() }) { Lbl(tr("Cancel", "إلغاء")) }
             }

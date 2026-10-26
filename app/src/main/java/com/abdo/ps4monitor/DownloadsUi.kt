@@ -56,11 +56,11 @@ import kotlinx.coroutines.withContext
                 FilledTonalButton(onClick = { Inbox.url.value = "" }, contentPadding = PaddingValues(horizontal = 14.dp)) { Ico(R.drawable.ic_add, 18.dp); Spacer(Modifier.width(6.dp)); Lbl(tr("Link", "رابط")) }
             }
         }
-        TabRow(selectedTabIndex = tab, containerColor = Color.Transparent, divider = {}) {
-            listOf(tr("Active", "نشطة") to active.size, tr("Paused", "متوقفة") to paused.size, tr("Completed", "مكتملة") to done.size, tr("Failed", "فاشلة") to failed.size).forEachIndexed { i, (t, n) ->
-                Tab(tab == i, { tab = i; sel = emptySet() }, text = { Lbl("$t $n") })
-            }
-        }
+        DnaHeaderRule()
+        val tabItems = listOf(tr("Active", "نشطة") to active.size, tr("Paused", "متوقفة") to paused.size, tr("Completed", "مكتملة") to done.size, tr("Failed", "فاشلة") to failed.size)
+        if (LocalDna.current == Dna.CLASSIC) TabRow(selectedTabIndex = tab, containerColor = Color.Transparent, divider = {}) {
+            tabItems.forEachIndexed { i, (t, n) -> Tab(tab == i, { tab = i; sel = emptySet() }, text = { Lbl("$t $n") }) }
+        } else SegmentedTabs(tabItems.map { "${it.first} ${it.second}" }, tab) { tab = it; sel = emptySet() }
         if (shown.isEmpty()) EmptyState(R.drawable.ic_download, tr("Nothing here yet.", "لا يوجد شيء هنا بعد."))
         LazyColumn(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
             items(shown, key = { it.id }) { d ->
@@ -92,13 +92,13 @@ import kotlinx.coroutines.withContext
         val accent by produceState<Color?>(null, d.id, d.iconReady) { value = CoverColor.load(d)?.let { Color(it) } }
         val acc = accent
         val tint = acc ?: MaterialTheme.colorScheme.primary
-        val headMod = if (acc != null) Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp))
+        val headMod = if (acc != null) Modifier.fillMaxWidth().clip(dnaShape(22))
             .background(Brush.verticalGradient(listOf(acc.copy(alpha = 0.32f), Color.Transparent))).padding(12.dp) else Modifier.fillMaxWidth()
         Row(headMod, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             val art by produceState<Bitmap?>(null, d.id, d.iconReady) { value = PkgThumbs.forDownload(d, 256) }
             val pic = art
-            if (pic != null) Image(pic.asImageBitmap(), null, Modifier.size(72.dp).clip(RoundedCornerShape(18.dp)), contentScale = ContentScale.Crop)
-            else Box(Modifier.size(52.dp).clip(RoundedCornerShape(16.dp)).background(bg), contentAlignment = Alignment.Center) { Ico(stateIcon(d.state), 28.dp, fg) }
+            if (pic != null) Image(pic.asImageBitmap(), null, Modifier.size(72.dp).clip(dnaShape(18)), contentScale = ContentScale.Crop)
+            else Box(Modifier.size(52.dp).clip(dnaShape(16)).background(bg), contentAlignment = Alignment.Center) { Ico(stateIcon(d.state), 28.dp, fg) }
             Column(Modifier.weight(1f)) {
                 Text(d.pkgTitle ?: d.displayName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Dim("${listOfNotNull(d.titleId).joinToString()}  ${ps4?.name ?: tr("Removed PS4", "جهاز محذوف")}  •  " + tr("attempt", "المحاولة") + " ${d.attempt}", maxLines = 1)
@@ -113,7 +113,7 @@ import kotlinx.coroutines.withContext
             Text(tr("Downloaded: ", "المحمَّل: ") + Fmt.bytes(d.currentSize))
             if (exp != null) {
                 Text(tr("Total: ", "الإجمالي: ") + Fmt.bytes(exp))
-                d.frac?.let { LinearProgressIndicator(progress = { it }, Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)), color = tint, trackColor = tint.copy(alpha = 0.22f)) }
+                d.frac?.let { DnaProgress(it, Modifier, 8.dp, tint) }
                 Text(tr("Progress: ", "التقدم: ") + "${d.pct}%")
             } else Text(tr("Total: unknown — no percentage or ETA is shown", "الإجمالي: غير معروف — لا تُعرض نسبة ولا وقت متبقٍّ"))
             if (d.state == DlState.DOWNLOADING) Text(tr("Speed: ", "السرعة: ") + "${Fmt.mbs(d.speed)}  •  ${Fmt.mbit(d.speed)}")

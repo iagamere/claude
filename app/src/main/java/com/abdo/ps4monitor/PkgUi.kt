@@ -94,7 +94,7 @@ private fun report(i: PkgInfo, path: String, size: Long): String = buildString {
                         Column {
                             st.pic1?.let { b -> Image(b.asImageBitmap(), null, Modifier.fillMaxWidth().height(150.dp).clickable { preview = b }, contentScale = ContentScale.Crop) }
                             Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Box(Modifier.size(92.dp).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
+                                Box(Modifier.size(92.dp).clip(dnaShape(20)).background(MaterialTheme.colorScheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
                                     val ic = st.icon
                                     if (ic != null) Image(ic.asImageBitmap(), null, Modifier.fillMaxSize().clickable { preview = ic }, contentScale = ContentScale.Crop) else Ico(R.drawable.ic_package, 40.dp)
                                 }
@@ -128,7 +128,7 @@ private fun report(i: PkgInfo, path: String, size: Long): String = buildString {
                 if (st.icon != null || st.pic0 != null || st.pic1 != null) item { Panel {
                     SectionTitle(tr("Artwork", "الصور"))
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        listOf(st.icon, st.pic0, st.pic1).forEach { b -> if (b != null) Image(b.asImageBitmap(), null, Modifier.height(130.dp).clip(RoundedCornerShape(14.dp)).clickable { preview = b }) }
+                        listOf(st.icon, st.pic0, st.pic1).forEach { b -> if (b != null) Image(b.asImageBitmap(), null, Modifier.height(130.dp).clip(dnaShape(14)).clickable { preview = b }) }
                     }
                 } }
                 if (i.params.isNotEmpty()) item { SelectionContainer { Panel {

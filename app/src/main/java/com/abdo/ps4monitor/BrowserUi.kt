@@ -126,7 +126,7 @@ fun b64ToBitmap(s: String): Bitmap? = if (s.isEmpty()) null else runCatching { B
 
 /** Clean square favicon container with a vector fallback. */
 @Composable fun Favicon(bmp: Bitmap?, size: Int = 40) {
-    Box(Modifier.size(size.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(size.dp).clip(dnaShape(10)).background(MaterialTheme.colorScheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
         if (bmp != null) Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize().padding(6.dp), contentScale = ContentScale.Fit)
         else Ico(R.drawable.ic_globe, (size * 0.55f).dp, MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -157,14 +157,15 @@ fun b64ToBitmap(s: String): Bitmap? = if (s.isEmpty()) null else runCatching { B
             BarBtn(R.drawable.ic_arrow_back, tab?.canBack == true) { tab?.web?.goBack() }
             BarBtn(R.drawable.ic_arrow_forward, tab?.canFwd == true) { tab?.web?.goForward() }
             BarBtn(if ((tab?.progress ?: 100) < 100) R.drawable.ic_close else R.drawable.ic_refresh) { if ((tab?.progress ?: 100) < 100) tab?.web?.stopLoading() else tab?.web?.reload() }
-            TextField(addr, { addr = it }, singleLine = true, shape = RoundedCornerShape(24.dp),
+            TextField(addr, { addr = it }, singleLine = true, shape = dnaShape(24),
                 modifier = Modifier.weight(1f).heightIn(min = 48.dp).onFocusChanged { focused = it.isFocused },
                 placeholder = { Lbl(tr("Search or enter address", "ابحث أو أدخل عنوانًا")) },
                 colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, disabledIndicatorColor = Color.Transparent,
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh, unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go), keyboardActions = KeyboardActions(onGo = { go() }))
             IconButton(onClick = { showTabs = true }, modifier = Modifier.size(40.dp)) {
-                Box(Modifier.size(24.dp).border(2.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(7.dp)), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(24.dp).border(2.dp, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(7.dp))   // fixed-shape: tab-count glyph
+                , contentAlignment = Alignment.Center) {
                     Text("${Browser.tabs.size}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
             }
             Box {
@@ -195,7 +196,7 @@ fun b64ToBitmap(s: String): Bitmap? = if (s.isEmpty()) null else runCatching { B
     if (showTabs) AlertDialog(onDismissRequest = { showTabs = false }, title = { Text(tr("Tabs", "التبويبات") + " (${Browser.tabs.size})") },
         text = { Column(Modifier.verticalScroll(rememberScrollState())) {
             Browser.tabs.toList().forEach { t ->
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { Browser.activeId = t.id; showTabs = false }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().clip(dnaShape(12)).clickable { Browser.activeId = t.id; showTabs = false }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Favicon(t.icon, 36)
                     Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
                         Text(t.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = if (t.id == Browser.activeId) FontWeight.Bold else FontWeight.Normal)
@@ -214,7 +215,7 @@ fun b64ToBitmap(s: String): Bitmap? = if (s.isEmpty()) null else runCatching { B
             text = { Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (bms.isEmpty()) Text(tr("No bookmarks yet. Open a site and use ⋮ → Add bookmark.", "لا توجد إشارات بعد. افتح موقعًا ثم ⋮ ← إضافة إشارة مرجعية."))
                 bms.forEach { b ->
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { Browser.current()?.web?.loadUrl(b.url); showBm = false }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().clip(dnaShape(12)).clickable { Browser.current()?.web?.loadUrl(b.url); showBm = false }.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Favicon(b64ToBitmap(b.icon), 36)
                         Column(Modifier.weight(1f).padding(horizontal = 10.dp)) { Text(b.title.ifBlank { b.url }, maxLines = 1, overflow = TextOverflow.Ellipsis); Dim(b.url, maxLines = 1) }
                         IconButton(onClick = { Store.deleteBookmark(b.url); bms = Store.bookmarks() }) { Ico(R.drawable.ic_delete, 20.dp) }

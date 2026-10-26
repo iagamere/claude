@@ -1,3 +1,12 @@
+# PS4 Download Monitor 6.9.0 (Design DNA, phase 3: every screen follows the design)
+
+- Shared page components in `DnaKit.kt`: `dnaCard` (shape + fill + texture + border for rows and custom layouts), `ActionTile`, `StatusPill`, `PrimaryAction`, `SecondaryAction`, `DnaHeaderRule`; moved out of HomeUi so every screen uses the same ones.
+- Home: connection card, server panel, shortcuts, PS4 information, game list cards, Downloads (cards, header, tabs: pills / underline / cut / slanted according to the design, progress bar with the game's tint), Files, Browser (address field, tab and bookmark rows), Captures, package page, empty states and the bottom bar divider.
+- Status stays readable in every design: marker + text + colour (round marker in round designs, square in angular ones); connected / sleeping / unavailable keep their own green / amber / red.
+- The original look (default theme, hairline design) is unchanged: the new dividers draw nothing for it and the Downloads tab bar keeps Material tabs.
+- Static test `PageThemingTest`: screens may not contain hard-coded corner radii (an exception must be marked `fixed-shape`), the shared components are defined once, and every motif / divider / texture / progress / border the generator can pick is drawn by the kit. It caught two leftovers in the game list while writing it.
+- Not done: Material `Card`s of Settings / Server picker / Storage follow the design's corner shapes through the theme, but not its borders or textures.
+
 # PS4 Download Monitor 6.8.0 (Design DNA, phase 2.5: the game type decides the motifs; fixed JVM-signature clash in Theme.kt)
 
 - Problem fixed: designs were chosen only from the artwork, so many covers fell into the same few looks recoloured (a light football cover got the samurai paper look in green).

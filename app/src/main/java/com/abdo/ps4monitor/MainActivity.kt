@@ -91,13 +91,13 @@ private val TABS = listOf(Triple("home", R.drawable.ic_home, "Home" to "الرئ
     val active by DownloadRepo.all.collectAsState()
     val activeCount = active.count { it.state.active }
     Scaffold(containerColor = Color.Transparent, bottomBar = {
-        if (topLevel) NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 0.dp) {
+        if (topLevel) Column { DnaHeaderRule(); NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 0.dp) {
             TABS.forEach { (r, icon, label) ->
                 NavigationBarItem(selected = route == r, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary, selectedTextColor = MaterialTheme.colorScheme.primary, indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f), unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant), label = { Lbl(tr(label.first, label.second), style = MaterialTheme.typography.labelMedium) },
                     icon = { BadgedBox(badge = { if (r == "downloads" && activeCount > 0) Badge { Text("$activeCount") } }) { Ico(icon) } },
                     onClick = { nav.navigate(r) { popUpTo(nav.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true } })
             }
-        }
+        } }
     }) { pad ->
         NavHost(nav, startDestination = "home", modifier = Modifier.padding(pad)) {
             composable("home") { HomeScreen(nav) }

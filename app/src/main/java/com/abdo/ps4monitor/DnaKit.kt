@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
@@ -29,6 +30,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PointMode
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
@@ -483,13 +485,13 @@ fun Modifier.dnaBorder(d: Dna, line: Color, glow: Color, shape: Shape): Modifier
 }
 
 /** Progress in [0,1]: round bar, tapered brush stroke, segmented ticks or glowing bar, according to the DNA. */
-@Composable fun DnaProgress(fraction: Float, modifier: Modifier = Modifier, height: Dp = 8.dp) {
+@Composable fun DnaProgress(fraction: Float, modifier: Modifier = Modifier, height: Dp = 8.dp, color: Color? = null) {
     val d = LocalDna.current; val cs = MaterialTheme.colorScheme
     val f = fraction.coerceIn(0f, 1f)
     val h = if (d.progress == ProgressKind.BRUSH) maxOf(height, 12.dp) else if (d.progress == ProgressKind.GLOW) maxOf(height, 10.dp) else height
     Canvas(modifier.fillMaxWidth().height(h)) {
         val w = size.width; val ph = size.height; val px = density; val bh = height.toPx()
-        val track = cs.outlineVariant; val a = cs.primary; val b = cs.secondary
+        val track = color?.copy(alpha = 0.22f) ?: cs.outlineVariant; val a = color ?: cs.primary; val b = color ?: cs.secondary
         when (d.progress) {
             ProgressKind.BAR -> {
                 val top = (ph - bh) / 2f; val r = androidx.compose.ui.geometry.CornerRadius(bh / 2f, bh / 2f)
@@ -624,5 +626,60 @@ private fun tagLabel(n: String) = when (n) {
                 Lbl(if (saved) tr("Saved in Settings > Theme", "حُفظ في الإعدادات ← الثيم") else tr("Save this design as a profile", "احفظ هذا التصميم كملف"))
             }
         }
+    }
+}
+
+
+// ------------------------------------------------------------------ shared page components (Home, Downloads, Files, Browser ...)
+/** Card look without padding or a column: shape, fill, texture and border of the DNA. For rows and custom layouts; add your own padding after it. */
+@Composable fun Modifier.dnaCard(radius: Int = 18, raised: Boolean = false, fill: Brush? = null, line: Color? = null): Modifier {
+    val d = LocalDna.current; val cs = MaterialTheme.colorScheme; val shape = dnaShape(radius)
+    val f: Brush = fill ?: when {
+        d.surface == SurfaceKind.GLASS -> Brush.verticalGradient(listOf(cs.surfaceContainerHigh.copy(alpha = 0.92f), cs.surfaceContainer.copy(alpha = 0.78f)))
+        raised && d.surface == SurfaceKind.GRADIENT -> Brush.linearGradient(listOf(cs.surfaceContainerHigh, cs.surfaceContainer))
+        else -> SolidColor(cs.surfaceContainerHigh)
+    }
+    return this.clip(shape).background(f).dnaTexture(d, cs.onSurface, cs.primary, card = true).dnaBorder(d, line ?: cs.outlineVariant, cs.primary, shape)
+}
+
+/** The DNA's divider under a screen title or above the bottom bar. Draws nothing for the plain hairline design, so the default look is unchanged. */
+@Composable fun DnaHeaderRule(modifier: Modifier = Modifier) { if (LocalDna.current.rule != RuleKind.HAIRLINE) DnaRule(modifier.fillMaxWidth()) }
+
+/** Shortcut tile: icon chip + label + arrow. */
+@Composable fun ActionTile(@androidx.annotation.DrawableRes icon: Int, label: String, modifier: Modifier, onClick: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Row(modifier.heightIn(min = 72.dp).dnaCard(18).clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(Modifier.size(42.dp).clip(dnaShape(12)).background(Brush.linearGradient(listOf(cs.primaryContainer, cs.surfaceContainerHighest))), contentAlignment = Alignment.Center) { Ico(icon, 24.dp, cs.primary) }
+        Lbl(label, Modifier.weight(1f), MaterialTheme.typography.titleSmall, cs.onSurface, FontWeight.SemiBold)
+        Ico(R.drawable.ic_arrow_forward, 18.dp, cs.outline)
+    }
+}
+
+/** Connection state of the console: marker + text + colour, so it never depends on colour alone. The pill becomes a cut / slanted / square tag in angular designs. */
+@Composable fun StatusPill(text: String, color: Color) {
+    val d = LocalDna.current
+    val round = d.shape.corner == Corner.ROUND
+    val shape: Shape = if (round) CircleShape else dnaShape(10)
+    val dot: Shape = if (round) CircleShape else RectangleShape
+    Row(Modifier.clip(shape).background(color.copy(alpha = 0.16f)).dnaBorder(d, color.copy(alpha = 0.5f), color, shape).padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        Box(Modifier.size(8.dp).clip(dot).background(color)); Lbl(text, color = color, style = MaterialTheme.typography.labelLarge, weight = FontWeight.SemiBold)
+    }
+}
+
+/** Primary action: accent fill (gradient, or a solid colour in solid-surface designs). Same contract as a Button (enabled / onClick / content). */
+@Composable fun PrimaryAction(enabled: Boolean, modifier: Modifier, onClick: () -> Unit, content: @Composable RowScope.() -> Unit) {
+    val cs = MaterialTheme.colorScheme; val d = LocalDna.current; val shape = dnaShape(16)
+    val fill: Brush = if (d.surface == SurfaceKind.SOLID) SolidColor(cs.primary) else Brush.horizontalGradient(listOf(cs.primary, cs.secondary))
+    CompositionLocalProvider(LocalContentColor provides cs.onPrimary) {
+        Row(modifier.height(52.dp).clip(shape).background(fill).dnaBorder(d, Color.Transparent, cs.onPrimary.copy(alpha = 0.6f), shape).alpha(if (enabled) 1f else 0.5f).clickable(enabled = enabled, onClick = onClick),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, content = content)
+    }
+}
+@Composable fun SecondaryAction(enabled: Boolean, accent: Boolean, modifier: Modifier, onClick: () -> Unit, content: @Composable RowScope.() -> Unit) {
+    val cs = MaterialTheme.colorScheme; val d = LocalDna.current; val shape = dnaShape(16); val c = if (accent) cs.secondary else cs.onSurface
+    CompositionLocalProvider(LocalContentColor provides c) {
+        Row(modifier.height(48.dp).clip(shape).dnaBorder(d, if (accent) cs.secondary.copy(alpha = 0.7f) else cs.outlineVariant, if (accent) cs.secondary else cs.primary, shape).alpha(if (enabled) 1f else 0.5f).clickable(enabled = enabled, onClick = onClick),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, content = content)
     }
 }

@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -64,13 +65,13 @@ import kotlinx.coroutines.withContext
 @Composable private fun GameCard(ps4: Ps4, g: GameInfo, onClick: () -> Unit) {
     val paths = remember(g.titleId, g.metaDir) { Ps4Info.art(g, "icon0.png") }
     val icon by produceState<Bitmap?>(Thumbs.peekAny(ps4, paths, 256), g.titleId) { if (value == null) value = Thumbs.loadAny(ps4, paths, 256) }
-    Column(Modifier.clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceContainerLow).clickable(onClick = onClick)) {
+    Column(Modifier.dnaCard(14, fill = SolidColor(MaterialTheme.colorScheme.surfaceContainerLow)).clickable(onClick = onClick)) {
         Box(Modifier.fillMaxWidth().aspectRatio(1f).background(MaterialTheme.colorScheme.surfaceContainerHighest), contentAlignment = Alignment.Center) {
             val b = icon
             if (b != null) Image(b.asImageBitmap(), g.title, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             else Ico(R.drawable.ic_package, 36.dp, MaterialTheme.colorScheme.outline)
             val cat = Ps4Info.categoryLabel(g.category)
-            if (g.category == "gp" || g.category == "ac") Surface(Modifier.align(Alignment.TopStart).padding(6.dp), shape = RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
+            if (g.category == "gp" || g.category == "ac") Surface(Modifier.align(Alignment.TopStart).padding(6.dp), shape = dnaShape(6), color = MaterialTheme.colorScheme.tertiaryContainer) {
                 Text(cat, Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
             }
         }

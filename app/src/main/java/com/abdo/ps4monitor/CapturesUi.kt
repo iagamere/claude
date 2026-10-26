@@ -192,7 +192,7 @@ private const val VTHUMB = 480    // video frame size
     val bmp by produceState<Bitmap?>(if (c.video) Thumbs.peekVideo(ps4, c.path, VTHUMB) else Thumbs.peek(ps4, c.path, 320), c.path) {
         if (value == null) value = if (c.video) Thumbs.videoFrame(ps4, c.path, c.size, VTHUMB) else Thumbs.load(ps4, c.path, c.size, 320)
     }
-    Column(Modifier.clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).combinedClickable(onClick = onClick, onLongClick = onLong)) {
+    Column(Modifier.clip(dnaShape(10)).background(MaterialTheme.colorScheme.surfaceContainerHigh).combinedClickable(onClick = onClick, onLongClick = onLong)) {
         Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f), contentAlignment = Alignment.Center) {
             val b = bmp
             if (b != null) Image(b.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
@@ -201,7 +201,7 @@ private const val VTHUMB = 480    // video frame size
             if (selected) Box(Modifier.matchParentSize().background(MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)))
             if (selected) Ico(R.drawable.ic_check_circle, 24.dp, Color.White, Modifier.align(Alignment.TopStart).padding(4.dp))
             if (busy) CircularProgressIndicator(Modifier.align(Alignment.TopEnd).padding(6.dp).size(18.dp), strokeWidth = 2.dp, color = Color.White)
-            else if (saved) Ico(R.drawable.ic_check, 20.dp, Color.White, Modifier.align(Alignment.TopEnd).padding(4.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50)).padding(2.dp))
+            else if (saved) Ico(R.drawable.ic_check, 20.dp, Color.White, Modifier.align(Alignment.TopEnd).padding(4.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(50)).padding(2.dp))   // fixed-shape: round badge
         }
         Column(Modifier.padding(6.dp)) {
             Dim(title, maxLines = 1)

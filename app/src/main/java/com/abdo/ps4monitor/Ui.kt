@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -53,6 +54,7 @@ fun pkgRoute(ps4Id: String, path: String) = "pkg/${Uri.encode(ps4Id)}/${Uri.enco
 @Composable fun EmptyState(@DrawableRes icon: Int, text: String) =
     Column(Modifier.fillMaxWidth().padding(vertical = 28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Ico(icon, 48.dp, MaterialTheme.colorScheme.outline); Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        DnaHeaderRule(Modifier.width(140.dp))
     }
 
 @Composable fun Chips(opts: List<Int>, sel: Int, unit: String, on: (Int) -> Unit) {
@@ -102,7 +104,6 @@ fun resultText(r: SubmitResult) = Tx.t(when (r) {
     val ctx = LocalContext.current; val scope = rememberCoroutineScope()
     val ps4 = Ps4Repo.get(d.ps4Id)
     val (bg, fg) = stateColors(d.state)
-    val shape = MaterialTheme.shapes.large
     // tint taken from the game's cover
     val accent by produceState<Color?>(null, d.id, d.iconReady) { value = CoverColor.load(d)?.let { Color(it) } }
     val acc = accent
@@ -113,13 +114,13 @@ fun resultText(r: SubmitResult) = Tx.t(when (r) {
         else -> base
     }
     val tint = acc ?: MaterialTheme.colorScheme.primary
-    Card(Modifier.fillMaxWidth().clip(shape).combinedClickable(onClick = onOpen, onLongClick = onLong), shape = shape, colors = CardDefaults.cardColors(containerColor = container), border = BorderStroke(1.dp, tint.copy(alpha = 0.28f))) {
+    Box(Modifier.fillMaxWidth().dnaCard(18, fill = SolidColor(container), line = tint.copy(alpha = 0.28f)).combinedClickable(onClick = onOpen, onLongClick = onLong)) {
         Row(Modifier.padding(start = 14.dp, top = 14.dp, bottom = 14.dp, end = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             val art by produceState<Bitmap?>(null, d.id, d.iconReady, d.state == DlState.COMPLETED) { value = PkgThumbs.forDownload(d, 160) }
             val pic = art
             Box(Modifier.size(56.dp)) {
-                if (pic != null) Image(pic.asImageBitmap(), null, Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)), contentScale = ContentScale.Crop)
-                else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)).background(bg), contentAlignment = Alignment.Center) {
+                if (pic != null) Image(pic.asImageBitmap(), null, Modifier.fillMaxSize().clip(dnaShape(14)), contentScale = ContentScale.Crop)
+                else Box(Modifier.fillMaxSize().clip(dnaShape(14)).background(bg), contentAlignment = Alignment.Center) {
                     Ico(if (selected == true) R.drawable.ic_check else stateIcon(d.state), 26.dp, fg) }
                 if (pic != null) Box(Modifier.align(Alignment.BottomEnd).size(22.dp).clip(CircleShape).background(bg).border(2.dp, container, CircleShape), contentAlignment = Alignment.Center) {
                     Ico(if (selected == true) R.drawable.ic_check else stateIcon(d.state), 13.dp, fg) }
@@ -132,8 +133,8 @@ fun resultText(r: SubmitResult) = Tx.t(when (r) {
                     Text(if (exp != null) "${Fmt.bytes(d.currentSize)} / ${Fmt.bytes(exp)}" + (d.pct?.let { "  •  $it%" } ?: "") else Fmt.bytes(d.currentSize),
                         style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val f = d.frac
-                val bar = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp))
-                if (f != null && (d.state.active || d.state == DlState.PAUSED)) LinearProgressIndicator(progress = { f }, bar, color = tint, trackColor = tint.copy(alpha = 0.22f))
+                val bar = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp))   // fixed-shape: hairline bar
+                if (f != null && (d.state.active || d.state == DlState.PAUSED)) DnaProgress(f, Modifier, 6.dp, tint)
                 else if (d.state == DlState.DOWNLOADING) LinearProgressIndicator(bar, color = tint, trackColor = tint.copy(alpha = 0.22f))            // total unknown: indeterminate, no fake %
                 if (d.state == DlState.DOWNLOADING) Dim(Fmt.mbs(d.speed) + if (d.etaSec >= 0) "  •  ETA ${Fmt.dur(d.etaSec)}" else "", maxLines = 1)
                 Text(d.state.label, style = MaterialTheme.typography.labelLarge, color = tint, maxLines = 1, overflow = TextOverflow.Ellipsis)
