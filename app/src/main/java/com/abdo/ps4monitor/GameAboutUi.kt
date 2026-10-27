@@ -53,12 +53,12 @@ private fun formatRelease(iso: String?, lang: String): String? {
     val lang = if (Lang.isAr) "ar" else "en"
     var retry by remember(titleId) { mutableStateOf(0) }
     val state by produceState<AboutState>(AboutState.Loading, titleId, online, lang, retry) {
-        val c = GameInfo.cached(titleId, lang)
+        val c = GameWebInfo.cached(titleId, lang)
         if (c != null) { value = AboutState.Ready(c); return@produceState }
         if (!online) { value = AboutState.Off; return@produceState }
-        if (retry == 0 && GameInfo.knownMissing(titleId, lang)) { value = AboutState.Missing; return@produceState }
+        if (retry == 0 && GameWebInfo.knownMissing(titleId, lang)) { value = AboutState.Missing; return@produceState }
         value = AboutState.Loading
-        val r = GameInfo.fetch(titleId, title, lang)
+        val r = GameWebInfo.fetch(titleId, title, lang)
         value = when { r.facts != null -> AboutState.Ready(r.facts); r.networkError -> AboutState.Offline; else -> AboutState.Missing }
     }
     DnaSurface(spacing = 10.dp) {

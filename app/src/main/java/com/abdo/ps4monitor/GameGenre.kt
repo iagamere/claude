@@ -56,7 +56,7 @@ object GameGenre {
  * General information about a game (type, age rating, release date, short premise ...): Wikipedia for the text, Wikidata for the facts.
  * One lookup per game and language, cached on the phone for 90 days (a miss for 7 days). Only the game's NAME is sent.
  */
-object GameInfo {
+object GameWebInfo {
     private const val DAY = 86_400_000L
     private val http by lazy { OkHttpClient.Builder().callTimeout(12, TimeUnit.SECONDS).connectTimeout(6, TimeUnit.SECONDS).build() }
     class FetchResult(val facts: GameFacts?, val networkError: Boolean)
