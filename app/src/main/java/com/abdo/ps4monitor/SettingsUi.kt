@@ -29,7 +29,7 @@ import kotlinx.coroutines.withContext
     Card(onClick = onClick, Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Ico(icon, 24.dp, MaterialTheme.colorScheme.primary)
-            Column(Modifier.weight(1f)) { Text(title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis); if (sub.isNotEmpty()) Dim(sub, maxLines = 2) }
+            Column(Modifier.weight(1f)) { Text(title, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis); if (sub.isNotEmpty()) Dim(sub, maxLines = 3) }
             Ico(R.drawable.ic_arrow_forward, 20.dp, MaterialTheme.colorScheme.outline)
         }
     }

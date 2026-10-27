@@ -68,6 +68,11 @@ object ThemeEngine {
     var applyGameAccents by mutableStateOf(false); private set
     /** may the app look the game's name up online to learn its type (sports, racing, horror ...)? Only the name is sent. */
     var onlineGenre by mutableStateOf(true); private set
+    /** 0 minimal, 1 balanced, 2 rich: how much ornament a design may show (see [restrained]) */
+    var decoration by mutableStateOf(1); private set
+    /** 0 small, 1 standard, 2 large (the previous size) */
+    var textSizeIdx by mutableStateOf(1); private set
+    fun textFactor(): Float = floatArrayOf(0.88f, 0.94f, 1f)[textSizeIdx.coerceIn(0, 2)]
 
     /** The saved choice, without any game-specific adaptation. */
     val base: AppTheme get() = when (mode) {
@@ -82,6 +87,7 @@ object ThemeEngine {
         activeProfileId = sp.getString("th_profile", null)
         applyGameAccents = sp.getBoolean("th_gameaccent", false)
         onlineGenre = sp.getBoolean("th_online", true)
+        decoration = sp.getInt("th_decor", 1).coerceIn(0, 2); textSizeIdx = sp.getInt("th_text", 1).coerceIn(0, 2)
         profiles = runCatching { parseList(sp.getString("th_profiles", "[]")!!) }.getOrDefault(emptyList())
         if (mode == ThemeMode.CUSTOM && profiles.none { it.id == activeProfileId }) mode = ThemeMode.DEFAULT
     }
@@ -89,6 +95,8 @@ object ThemeEngine {
     fun chooseMode(m: ThemeMode) { mode = m; sp().edit().putString("th_mode", m.name).apply() }
     fun selectPreset(id: String) { if (preset(id) == null) return; presetId = id; chooseMode(ThemeMode.PRESET); sp().edit().putString("th_preset", id).apply() }
     fun selectProfile(id: String) { if (profiles.none { it.id == id }) return; activeProfileId = id; chooseMode(ThemeMode.CUSTOM); sp().edit().putString("th_profile", id).apply() }
+    fun chooseDecoration(i: Int) { decoration = i.coerceIn(0, 2); sp().edit().putInt("th_decor", decoration).apply() }
+    fun chooseTextSize(i: Int) { textSizeIdx = i.coerceIn(0, 2); sp().edit().putInt("th_text", textSizeIdx).apply() }
     fun enableOnlineGenre(b: Boolean) { onlineGenre = b; sp().edit().putBoolean("th_online", b).apply() }
     fun setGameAccents(b: Boolean) { applyGameAccents = b; sp().edit().putBoolean("th_gameaccent", b).apply() }
     fun resetToDefault() { presetId = "default"; chooseMode(ThemeMode.DEFAULT); sp().edit().putString("th_preset", "default").apply() }

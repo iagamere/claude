@@ -64,6 +64,19 @@ data class Dna(
     }
 }
 
+/**
+ * How much decoration a design may show: 0 minimal, 1 balanced (the default), 2 rich (exactly as designed). Only the AMOUNT of ornament changes
+ * (fewer / fainter motifs, fainter textures, calmer borders); shape, tabs, fonts and the rest of the component language stay.
+ */
+fun Dna.restrained(level: Int): Dna {
+    if (level >= 2) return this
+    val minimal = level <= 0
+    val orn = ornaments.take(if (minimal) 1 else 2).map { it.copy(alpha = it.alpha * (if (minimal) 0.55f else 0.8f), density = it.density * (if (minimal) 0.6f else 0.85f)) }
+    val tx = texture.copy(intensity = texture.intensity * (if (minimal) 0.4f else 0.7f), onCards = !minimal && texture.onCards && texture.kind == TextureKind.PAPER)
+    val bd = if (minimal) border.copy(kind = when (border.kind) { BorderKind.DOUBLE, BorderKind.BRACKETS, BorderKind.FLOURISH -> BorderKind.SINGLE; else -> border.kind }, width = minOf(border.width, 1f)) else border
+    return copy(ornaments = orn, texture = tx, border = bd)
+}
+
 /** The nine colour roles of one appearance (ARGB ints). */
 data class ColorSet(val bg: Int, val bg2: Int, val surface: Int, val accent: Int, val accent2: Int, val text: Int, val text2: Int, val border: Int, val progress: Int)
 
@@ -130,15 +143,15 @@ object DnaPresets {
     val GHOST_DNA = Dna(
         shape = ShapeDna(Corner.SQUARE, 1f, 3), border = BorderDna(BorderKind.DOUBLE, 0.8f), rule = RuleKind.BRUSH, surface = SurfaceKind.SOLID,
         texture = TextureDna(TextureKind.PAPER, 0.8f, onCards = true),
-        ornaments = listOf(OrnamentDna(OrnamentKind.SEIGAIHA_BAND, 1f, 0.35f), OrnamentDna(OrnamentKind.GINKGO, 0.8f, 0.6f), OrnamentDna(OrnamentKind.BRUSH_SWEEP, 1f, 0.55f)),
-        type = TypeDna(FontKind.SANS, FontKind.SERIF, 500, 0.12f), spacing = 1.12f, hero = HeroKind.FRAMED, tabs = TabKind.UNDERLINE, progress = ProgressKind.BRUSH)
+        ornaments = listOf(OrnamentDna(OrnamentKind.GINKGO, 0.8f, 0.6f), OrnamentDna(OrnamentKind.BRUSH_SWEEP, 1f, 0.55f), OrnamentDna(OrnamentKind.SEIGAIHA_BAND, 1f, 0.35f)),
+        type = TypeDna(FontKind.SANS, FontKind.SERIF, 500, 0.06f), spacing = 1.12f, hero = HeroKind.FRAMED, tabs = TabKind.UNDERLINE, progress = ProgressKind.BRUSH)
 
     /** Hollow Knight: abyssal blue, cyan glow, pale bone. Large soft corners with a glowing hairline, translucent surfaces, drifting spores and light shafts. */
     val HOLLOW_DNA = Dna(
         shape = ShapeDna(Corner.ROUND, 1.3f, 4), border = BorderDna(BorderKind.GLOW, 1f), rule = RuleKind.GLOW, surface = SurfaceKind.GLASS,
         texture = TextureDna(TextureKind.PARTICLES, 0.7f, onCards = false),
         ornaments = listOf(OrnamentDna(OrnamentKind.LIGHT_RAYS, 1f, 0.14f), OrnamentDna(OrnamentKind.SPORES, 1f, 0.8f)),
-        type = TypeDna(FontKind.SERIF, FontKind.DEFAULT, 700, 0.06f), spacing = 1f, hero = HeroKind.FADE, tabs = TabKind.PILL, progress = ProgressKind.GLOW)
+        type = TypeDna(FontKind.SERIF, FontKind.DEFAULT, 700, 0.03f), spacing = 1f, hero = HeroKind.FADE, tabs = TabKind.PILL, progress = ProgressKind.GLOW)
 
     val DEFAULT = legacy("default", "PS4 Monitor", 0x0A1022, 0x0E1730, 0x141E3D, 0x7C6BFF, 0x4FC3F7, 0xF1F3FF, 0xA9B2D6, 0x2A3769)
 

@@ -100,7 +100,7 @@ private fun report(i: PkgInfo, path: String, size: Long): String = buildString {
                                 }
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(i.title ?: fileName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                                    Text(i.titleId ?: i.contentId, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+                                    Text(i.titleId ?: i.contentId, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
                                 }
                             }
                             FlowRow(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

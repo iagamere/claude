@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
         else -> ThemeEngine.scheme(shown)
     }
     val lightUi = if (legacy) !dark else ColorMath.luminance(shown.bg) > 0.4
-    val dna = if (pagesDefault) Dna.CLASSIC else shown.dna
+    val dna = (if (pagesDefault) Dna.CLASSIC else shown.dna).restrained(ThemeEngine.decoration)
     val tokens = ThemeEngine.tokens(if (legacy && !dark) ThemeEngine.resolve(appTheme, false) else shown)
     val view = LocalView.current
     SideEffect {

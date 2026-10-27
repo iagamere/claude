@@ -154,7 +154,7 @@ import kotlinx.coroutines.withContext
     val dark = appDark()
     val shown = if (ThemeEngine.mode == ThemeMode.DEFAULT && assigned == null) null else ThemeEngine.resolve(ThemeEngine.forGame(gameTheme, g.titleId), dark)
     val cs = if (shown == null) MaterialTheme.colorScheme else ThemeEngine.scheme(shown)
-    val dna = shown?.dna ?: LocalDna.current
+    val dna = shown?.dna?.restrained(ThemeEngine.decoration) ?: LocalDna.current
     val tokens = if (shown == null) LocalTokens.current else ThemeEngine.tokens(shown)
     val sheetBg by animateColorAsState(cs.surface, tween(350), label = "gameBg")
     CompositionLocalProvider(LocalDna provides dna, LocalTokens provides tokens) { MaterialTheme(colorScheme = cs, typography = dnaTypography(dna), shapes = dnaShapes(dna)) {
@@ -166,7 +166,8 @@ import kotlinx.coroutines.withContext
                 if (tab == 1) Box(Modifier.padding(horizontal = 16.dp).fillMaxWidth().height(screenH * 0.7f)) { CapturesTab(ps4, 0, g.titleId) }
                 if (tab == 2) Box(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) { TrophiesTab(ps4, g) }
                 if (tab == 0) Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DnaSurface { rows.forEachIndexed { i, (k, v) -> if (i > 0) DnaRule(Modifier.fillMaxWidth()); InfoRow(k, v) } }
+                    GameAbout(g.titleId, g.title)
+                    DnaSurface { rows.forEachIndexed { i, (k, v) -> if (i > 0) DnaRule(Modifier.fillMaxWidth(), subtle = true); InfoRow(k, v) } }
                     GameThemePicker(g.titleId, g.title, gameTheme)
                     FilledTonalButton(shape = dnaShape(14), onClick = { clip.setText(AnnotatedString(g.titleId)); Toast.makeText(ctx, tr("Copied", "تم النسخ"), Toast.LENGTH_SHORT).show() }) {
                         Ico(R.drawable.ic_copy, 18.dp); Spacer(Modifier.width(6.dp)); Lbl(tr("Copy title ID", "نسخ معرّف اللعبة"))

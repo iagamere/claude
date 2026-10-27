@@ -104,7 +104,7 @@ private fun go(nav: NavController, r: String) = nav.navigate(r) { popUpTo(nav.gr
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Column(Modifier.weight(1f)) {
                             Dim(tr("Server in use", "السيرفر المستخدم"))
-                            Text(srvName, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(srvName, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
                         HelpDot(tr("Server in use", "السيرفر المستخدم"), tr("The server that receives your downloads. Tap the row to switch between our server and others you have set up.", "السيرفر الذي يستقبل تحميلاتك. اضغط الصف للتبديل بين سيرفرنا وسيرفرات أخرى أعددتها."))
                         Lbl(tr("Change", "تغيير"), color = cs.primary)

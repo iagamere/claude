@@ -41,8 +41,8 @@ fun pkgRoute(ps4Id: String, path: String) = "pkg/${Uri.encode(ps4Id)}/${Uri.enco
 
 /** Single-line label that is ellipsised instead of breaking into a second line (buttons, chips, tabs). */
 @Composable fun Lbl(t: String, modifier: Modifier = Modifier, style: TextStyle = LocalTextStyle.current, color: Color = Color.Unspecified,
-                    weight: FontWeight? = null, textAlign: TextAlign? = null) =
-    Text(t, modifier, color = color, fontWeight = weight, textAlign = textAlign, maxLines = 1, overflow = TextOverflow.Ellipsis, style = style)
+                    weight: FontWeight? = null, textAlign: TextAlign? = null, maxLines: Int = 2) =
+    Text(t, modifier, color = color, fontWeight = weight, textAlign = textAlign, maxLines = maxLines, overflow = TextOverflow.Ellipsis, style = style)
 
 @Composable fun SectionTitle(t: String) = Text(t, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
 
@@ -69,7 +69,7 @@ fun pkgRoute(ps4Id: String, path: String) = "pkg/${Uri.encode(ps4Id)}/${Uri.enco
 @Composable fun BackHeader(title: String, nav: androidx.navigation.NavController, trailing: @Composable RowScope.() -> Unit = {}) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = { nav.popBackStack() }) { Ico(R.drawable.ic_arrow_back) }
-        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
         trailing()
     }
 }
@@ -131,7 +131,7 @@ fun resultText(r: SubmitResult) = Tx.t(when (r) {
                 val exp = d.expectedSize?.takeIf { it > 0 }
                 if (d.currentSize > 0 || d.state == DlState.COMPLETED)
                     Text(if (exp != null) "${Fmt.bytes(d.currentSize)} / ${Fmt.bytes(exp)}" + (d.pct?.let { "  •  $it%" } ?: "") else Fmt.bytes(d.currentSize),
-                        style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 val f = d.frac
                 val bar = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp))   // fixed-shape: hairline bar
                 if (f != null && (d.state.active || d.state == DlState.PAUSED)) DnaProgress(f, Modifier, 6.dp, tint)

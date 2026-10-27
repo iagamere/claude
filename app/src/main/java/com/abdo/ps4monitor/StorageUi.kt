@@ -182,7 +182,7 @@ private fun join(dir: String, name: String) = if (dir.endsWith("/")) dir + name 
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick), shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Ico(icon, 24.dp, MaterialTheme.colorScheme.primary)
-            Column(Modifier.weight(1f)) { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis); if (sub != title) Dim(sub, maxLines = 1) }
+            Column(Modifier.weight(1f)) { Text(title, maxLines = 2, overflow = TextOverflow.Ellipsis); if (sub != title) Dim(sub, maxLines = 2) }
             Ico(R.drawable.ic_arrow_forward, 18.dp, MaterialTheme.colorScheme.outline)
         }
     }

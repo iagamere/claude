@@ -51,7 +51,7 @@ private fun modeHint(m: ThemeMode) = when (m) {
  * It is built with the same DNA components as the real pages, so the corners, borders, dividers, tabs, progress and typography shown here are the real ones.
  */
 @Composable fun ThemePreview(t: AppTheme, modifier: Modifier = Modifier) {
-    val k = ThemeEngine.tokens(t); val dna = t.dna
+    val k = ThemeEngine.tokens(t); val dna = t.dna.restrained(ThemeEngine.decoration)
     CompositionLocalProvider(LocalTokens provides k, LocalDna provides dna) {
         MaterialTheme(colorScheme = ThemeEngine.scheme(t), typography = dnaTypography(dna), shapes = dnaShapes(dna)) {
             val shape = dnaShape(20)
@@ -179,15 +179,25 @@ private fun modeHint(m: ThemeMode) = when (m) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(tr("System", "النظام"), tr("Light", "فاتح"), tr("Dark", "داكن")).forEachIndexed { i, t -> FilterChip(Store.theme.intValue == i, { Store.setTheme(i) }, label = { Lbl(t) }) }
                     }
+                    SectionTitle(tr("Decoration", "الزخرفة"))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(tr("Minimal", "بسيطة"), tr("Balanced", "متوازنة"), tr("Rich", "غنية")).forEachIndexed { i, t -> FilterChip(ThemeEngine.decoration == i, { ThemeEngine.chooseDecoration(i) }, label = { Lbl(t) }) }
+                    }
+                    Dim(tr("How many motifs, textures and ornamental borders a design may show. Balanced is recommended; shapes, tabs and fonts do not change.", "كم من الزخارف والملمس والحدود المزخرفة يُسمح للتصميم بإظهاره. المتوازنة هي الموصى بها، ولا تتغير الأشكال والتبويبات والخطوط."))
+                    SectionTitle(tr("Text size", "حجم الخط"))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(tr("Small", "صغير"), tr("Standard", "عادي"), tr("Large", "كبير")).forEachIndexed { i, t -> FilterChip(ThemeEngine.textSizeIdx == i, { ThemeEngine.chooseTextSize(i) }, label = { Lbl(t) }) }
+                    }
+                    Dim(tr("Applies to the whole app. Smaller text shows longer sentences without cutting them.", "ينطبق على التطبيق كله. الخط الأصغر يُظهر الجمل الطويلة دون قصّها."))
                     Dim(tr("Light / Dark / System works with every theme: each theme has its own light and dark colours. Changing the theme never changes this choice.", "الفاتح والداكن والنظام تعمل مع كل ثيم: لكل ثيم ألوان فاتحة وداكنة خاصة به. تغيير الثيم لا يغيّر هذا الاختيار."))
                 }
             }
             item {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(Modifier.weight(1f)) {
-                        Text(tr("Detect the game type online", "تحديد نوع اللعبة عبر الإنترنت"))
-                        Dim(tr("Looks up the game's name in an online encyclopedia once, so sports, racing, horror, fantasy ... games get their own motifs. Only the name is sent. Off = the name and the artwork only.",
-                            "يبحث عن اسم اللعبة مرة واحدة في موسوعة على الإنترنت لتحصل ألعاب الرياضة والسباق والرعب والفانتازيا على زخارفها الخاصة. يُرسَل الاسم فقط. عند الإيقاف: الاسم والغلاف فقط."))
+                        Text(tr("Look up game information online", "البحث عن معلومات اللعبة عبر الإنترنت"))
+                        Dim(tr("Looks the game's name up in an online encyclopedia (Wikipedia / Wikidata) once: it gives the game its own motifs and fills the About section (genre, age rating, release date, short premise). Only the name is sent. Off = name and artwork only.",
+                            "يبحث عن اسم اللعبة في موسوعة على الإنترنت (ويكيبيديا / ويكيداتا) مرة واحدة: فتحصل على زخارفها الخاصة ويُملأ قسم «عن اللعبة» (النوع والتصنيف العمري وتاريخ الإصدار ونبذة). يُرسَل الاسم فقط. عند الإيقاف: الاسم والغلاف فقط."))
                     }
                     Switch(ThemeEngine.onlineGenre, { ThemeEngine.enableOnlineGenre(it) })
                 }

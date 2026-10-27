@@ -47,6 +47,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.isSpecified
+import androidx.compose.ui.unit.times
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.pow
@@ -93,15 +95,27 @@ private fun family(k: FontKind): FontFamily = when (k) {
 }
 /** single-weight faces must never be faux-bolded */
 private fun singleWeight(k: FontKind) = k == FontKind.DISPLAY || k == FontKind.PIXEL
-/** Title roles (display / headline / title) take the title face, weight and tracking; body and label roles take the body face. Arabic keeps its joined letters (no tracking). */
+private fun androidx.compose.ui.text.TextStyle.sc(f: Float): androidx.compose.ui.text.TextStyle =
+    if (f == 1f) this else copy(fontSize = if (fontSize.isSpecified) fontSize * f else fontSize, lineHeight = if (lineHeight.isSpecified) lineHeight * f else lineHeight)
+/** the wide display faces are drawn smaller so that titles take the same room as the default face, the condensed one a little larger */
+private fun titleFactor(k: FontKind) = when (k) { FontKind.TECH -> 0.88f; FontKind.PIXEL -> 0.7f; FontKind.ROMAN -> 0.95f; FontKind.DISPLAY -> 1.12f; else -> 1f }
+private fun scaledTypography(f: Float): Typography {
+    val b = Typography(); if (f == 1f) return b
+    return b.copy(displayLarge = b.displayLarge.sc(f), displayMedium = b.displayMedium.sc(f), displaySmall = b.displaySmall.sc(f),
+        headlineLarge = b.headlineLarge.sc(f), headlineMedium = b.headlineMedium.sc(f), headlineSmall = b.headlineSmall.sc(f),
+        titleLarge = b.titleLarge.sc(f), titleMedium = b.titleMedium.sc(f), titleSmall = b.titleSmall.sc(f),
+        bodyLarge = b.bodyLarge.sc(f), bodyMedium = b.bodyMedium.sc(f), bodySmall = b.bodySmall.sc(f),
+        labelLarge = b.labelLarge.sc(f), labelMedium = b.labelMedium.sc(f), labelSmall = b.labelSmall.sc(f))
+}
+/** All text sizes follow the user's "text size" choice; title roles take the design's face, weight and tracking; body and label roles take its body face. Arabic keeps its joined letters (no tracking). */
 @Composable fun dnaTypography(d: Dna): Typography {
-    val ar = Lang.isAr
-    return remember(d, ar) {
-        val t = d.type; val base = Typography()
+    val ar = Lang.isAr; val f = ThemeEngine.textFactor()
+    return remember(d, ar, f) {
+        val t = d.type; val base = scaledTypography(f)
         if (t.title == FontKind.DEFAULT && t.body == FontKind.DEFAULT && t.titleWeight == 0 && t.tracking == 0f) base
         else {
-            val tf = family(t.title); val bf = family(t.body)
-            fun ti(s: androidx.compose.ui.text.TextStyle) = s.copy(fontFamily = tf, fontWeight = if (t.titleWeight > 0) FontWeight(t.titleWeight) else s.fontWeight,
+            val tf = family(t.title); val bf = family(t.body); val k = titleFactor(t.title)
+            fun ti(s: androidx.compose.ui.text.TextStyle) = s.sc(k).copy(fontFamily = tf, fontWeight = if (t.titleWeight > 0) FontWeight(t.titleWeight) else s.fontWeight,
                 letterSpacing = if (ar || t.tracking <= 0f) s.letterSpacing else t.tracking.em, fontSynthesis = if (singleWeight(t.title)) FontSynthesis.None else s.fontSynthesis)
             fun bo(s: androidx.compose.ui.text.TextStyle) = s.copy(fontFamily = bf, fontSynthesis = if (singleWeight(t.body)) FontSynthesis.None else s.fontSynthesis)
             base.copy(displayLarge = ti(base.displayLarge), displayMedium = ti(base.displayMedium), displaySmall = ti(base.displaySmall),
@@ -435,13 +449,13 @@ fun Modifier.dnaBorder(d: Dna, line: Color, glow: Color, shape: Shape): Modifier
 }
 
 /** A divider whose look is the DNA's: hairline, brush stroke, diamond ornament, glow or technical ticks. The caller gives the width (fillMaxWidth / weight). */
-@Composable fun DnaRule(modifier: Modifier = Modifier) {
-    val d = LocalDna.current; val cs = MaterialTheme.colorScheme
+@Composable fun DnaRule(modifier: Modifier = Modifier, subtle: Boolean = false) {
+    val d = LocalDna.current; val cs = MaterialTheme.colorScheme; val kind = if (subtle) RuleKind.HAIRLINE else d.rule
     val line = cs.outlineVariant; val acc = cs.primary
-    val h = when (d.rule) { RuleKind.HAIRLINE -> 1.dp; RuleKind.BRUSH -> 8.dp; RuleKind.DIAMOND -> 10.dp; RuleKind.GLOW -> 9.dp; RuleKind.TECH -> 8.dp; RuleKind.STRIPES -> 10.dp; RuleKind.WAVE -> 10.dp; RuleKind.PIXEL -> 8.dp; RuleKind.PITCH -> 12.dp }
+    val h = when (kind) { RuleKind.HAIRLINE -> 1.dp; RuleKind.BRUSH -> 8.dp; RuleKind.DIAMOND -> 10.dp; RuleKind.GLOW -> 9.dp; RuleKind.TECH -> 8.dp; RuleKind.STRIPES -> 10.dp; RuleKind.WAVE -> 10.dp; RuleKind.PIXEL -> 8.dp; RuleKind.PITCH -> 12.dp }
     Canvas(modifier.height(h)) {
         val w = size.width; val ph = size.height; val px = density; val cy = ph / 2f
-        when (d.rule) {
+        when (kind) {
             RuleKind.HAIRLINE -> drawRect(Brush.horizontalGradient(listOf(line, Color.Transparent), 0f, w), Offset(0f, 0f), Size(w, ph))
             RuleKind.BRUSH -> drawPath(brushPath(0f, w, cy, 6f * px, 0.8f * px, 0.6f), acc.copy(alpha = 0.6f))
             RuleKind.DIAMOND -> {
@@ -648,10 +662,9 @@ private fun tagLabel(n: String) = when (n) {
 /** Shortcut tile: icon chip + label + arrow. */
 @Composable fun ActionTile(@androidx.annotation.DrawableRes icon: Int, label: String, modifier: Modifier, onClick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
-    Row(modifier.heightIn(min = 72.dp).dnaCard(18).clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.size(42.dp).clip(dnaShape(12)).background(Brush.linearGradient(listOf(cs.primaryContainer, cs.surfaceContainerHighest))), contentAlignment = Alignment.Center) { Ico(icon, 24.dp, cs.primary) }
+    Row(modifier.heightIn(min = 68.dp).dnaCard(18).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.size(38.dp).clip(dnaShape(12)).background(Brush.linearGradient(listOf(cs.primaryContainer, cs.surfaceContainerHighest))), contentAlignment = Alignment.Center) { Ico(icon, 22.dp, cs.primary) }
         Lbl(label, Modifier.weight(1f), MaterialTheme.typography.titleSmall, cs.onSurface, FontWeight.SemiBold)
-        Ico(R.drawable.ic_arrow_forward, 18.dp, cs.outline)
     }
 }
 
