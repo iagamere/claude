@@ -61,7 +61,7 @@ enum class ArtStyle { PAPER, LUMINOUS, DRAMATIC, NEON, MINIMAL, SOFT }
 object ArtAnalyzer {
     private const val ANALYSIS_SIDE = 160
     /** Bump when the analysis or the generator changes, so cached designs are recomputed. */
-    const val VERSION = 2
+    const val VERSION = 3
 
     /** Identifies an artwork + analyser version: a cached design is reused only while this stays the same (12x12 area-averaged thumbnail, FNV-1a). */
     fun fingerprint(rasters: List<Raster>): Long {

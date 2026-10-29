@@ -117,10 +117,11 @@ import kotlinx.coroutines.withContext
             ThemeEngine.generatedFor(titleId, fp) ?: ThemeEngine.storeGenerated(titleId, fp, DnaGenerator.generate(ArtAnalyzer.analyze(built.first, built.second), tags))
         }.getOrNull()
         val local = GameGenre.local(title)
-        val cached = GameGenre.cached(titleId)
-        value = withContext(Dispatchers.Default) { design(GenreClassifier.merge(local, cached ?: emptyMap())) }
-        if (cached == null && online) {
-            val fetched = GameGenre.fetch(titleId, title)
+        val known = GameWebInfo.tags(titleId)
+        value = withContext(Dispatchers.Default) { design(GenreClassifier.merge(local, known ?: emptyMap())) }
+        if (known == null && online) {
+            // one online lookup serves the About section and the game type; the design is refined when the type arrives
+            val fetched = GenreClassifier.decode(GameWebInfo.fetch(titleId, title, if (Lang.isAr) "ar" else "en").facts?.tags)
             if (fetched.isNotEmpty()) value = withContext(Dispatchers.Default) { design(GenreClassifier.merge(local, fetched)) } ?: value
         }
     }

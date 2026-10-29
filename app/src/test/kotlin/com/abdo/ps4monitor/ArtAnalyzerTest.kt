@@ -36,7 +36,7 @@ class ArtAnalyzerTest {
     @Test fun darkHotArtIsDramaticAndAngular() {
         assertEquals(ArtStyle.DRAMATIC, tekken.profile.top)
         val d = tekken.dna
-        assertEquals(Corner.CUT, d.shape.corner); assertEquals(BorderKind.BRACKETS, d.border.kind); assertEquals(RuleKind.TECH, d.rule)
+        assertEquals(Corner.CUT, d.shape.corner); assertEquals(BorderKind.SINGLE, d.border.kind); assertEquals(RuleKind.TECH, d.rule)
         assertEquals(TabKind.CUT, d.tabs); assertEquals(ProgressKind.TICKS, d.progress); assertEquals(FontKind.CONDENSED, d.type.title)
         assertTrue("warm red / pink accent, hue ${hue(tekken.dark.accent)}", hueNear(tekken.dark.accent, 350f, 30f))
     }

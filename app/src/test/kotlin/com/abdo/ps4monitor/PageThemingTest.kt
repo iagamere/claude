@@ -35,4 +35,17 @@ class PageThemingTest {
         for (k in ProgressKind.values()) assertTrue("progress $k not drawn", kit.contains("ProgressKind.${k.name} ->"))
         for (k in BorderKind.values()) assertTrue("border $k not drawn", kit.contains("BorderKind.${k.name} ->"))
     }
+
+    @Test fun incompleteCornerLinesDoNotCreepBack() {
+        // user feedback (v6.10): the partial straight lines at the corners of cards and tab bars looked odd. Halos / glows are wanted and stay.
+        val kit = File(dir(), "DnaKit.kt").readText()
+        assertTrue("curl corners are gone", !kit.contains("fun curl("))
+        assertTrue("corner brackets are gone", !kit.contains("val len = 14f * px; val i = 3f * px"))
+        for (t in Tag.values()) { val b = DnaGenerator.kit(t).border.kind; assertTrue("$t uses $b", b != BorderKind.BRACKETS && b != BorderKind.FLOURISH) }
+        for (r in DnaPresets.ALL) assertTrue(r.id, r.dna.border.kind != BorderKind.BRACKETS && r.dna.border.kind != BorderKind.FLOURISH)
+    }
+    @Test fun haloAndGlowEffectsAreStillDrawn() {
+        val kit = File(dir(), "DnaKit.kt").readText()
+        assertTrue("soft discs around specks", kit.contains("rs[i] * 6f")); assertTrue("glow ball on progress", kit.contains("bh * 1.5f"))
+    }
 }

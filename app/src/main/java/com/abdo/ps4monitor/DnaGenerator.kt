@@ -33,21 +33,21 @@ object DnaGenerator {
             listOf(o(OrnamentKind.PITCH_LINES, 1f, 0.28f), o(OrnamentKind.SPEED_STRIPES, 1f, 0.2f)), TypeDna(FontKind.DISPLAY, FontKind.DEFAULT, 0, 0.03f), TabKind.SLANT, ProgressKind.STRIPED, SurfaceKind.SOLID, HeroKind.FADE)
         Tag.RACING -> Kit(ShapeDna(Corner.SLANT, 1f, 4), BorderDna(BorderKind.SINGLE, 1.4f), RuleKind.STRIPES, tx(TextureKind.DIAGONAL, 0.7f),
             listOf(o(OrnamentKind.SPEED_STRIPES, 1.2f, 0.3f), o(OrnamentKind.CHECKER_STRIP, 1f, 0.3f)), TypeDna(FontKind.TECH, FontKind.DEFAULT, 700, 0.03f), TabKind.SLANT, ProgressKind.STRIPED, SurfaceKind.SOLID, HeroKind.FADE)
-        Tag.FIGHTING -> Kit(ShapeDna(Corner.CUT, 1f, 4), BorderDna(BorderKind.BRACKETS, 1f), RuleKind.TECH, tx(TextureKind.PARTICLES, 0.45f),
+        Tag.FIGHTING -> Kit(ShapeDna(Corner.CUT, 1f, 4), BorderDna(BorderKind.SINGLE, 1.4f), RuleKind.TECH, tx(TextureKind.PARTICLES, 0.45f),
             listOf(o(OrnamentKind.SCRATCHES, 1f, 0.4f), o(OrnamentKind.SPORES, 0.6f, 0.5f)), TypeDna(FontKind.DISPLAY, FontKind.DEFAULT, 0, 0.03f), TabKind.CUT, ProgressKind.TICKS, SurfaceKind.SOLID, HeroKind.FADE)
-        Tag.SHOOTER -> Kit(ShapeDna(Corner.CUT, 0.8f, 4), BorderDna(BorderKind.BRACKETS, 1f), RuleKind.TECH, tx(TextureKind.HEX, 0.5f),
+        Tag.SHOOTER -> Kit(ShapeDna(Corner.CUT, 0.8f, 4), BorderDna(BorderKind.SINGLE, 1.4f), RuleKind.TECH, tx(TextureKind.HEX, 0.5f),
             listOf(o(OrnamentKind.HEX_GRID, 1f, 0.22f)), TypeDna(FontKind.DISPLAY, FontKind.DEFAULT, 0, 0.03f), TabKind.CUT, ProgressKind.TICKS, SurfaceKind.SOLID, HeroKind.FADE)
         Tag.HORROR -> Kit(ShapeDna(Corner.SQUARE, 1f, 2), BorderDna(BorderKind.SINGLE, 0.75f), RuleKind.BRUSH, tx(TextureKind.PAPER, 0.9f),
             listOf(o(OrnamentKind.SCRATCHES, 1.2f, 0.35f)), TypeDna(FontKind.ROMAN, FontKind.DEFAULT, 600, 0.03f), TabKind.UNDERLINE, ProgressKind.BRUSH, SurfaceKind.SOLID, HeroKind.FADE)
-        Tag.FANTASY -> Kit(ShapeDna(Corner.ROUND, 1f, 4), BorderDna(BorderKind.FLOURISH, 1f), RuleKind.DIAMOND, tx(TextureKind.PARTICLES, 0.5f),
+        Tag.FANTASY -> Kit(ShapeDna(Corner.ROUND, 1f, 4), BorderDna(BorderKind.GLOW, 0.8f), RuleKind.DIAMOND, tx(TextureKind.PARTICLES, 0.5f),
             listOf(o(OrnamentKind.SPORES, 0.7f, 0.6f)), TypeDna(FontKind.ROMAN, FontKind.DEFAULT, 700, 0.03f), TabKind.UNDERLINE, ProgressKind.BAR, SurfaceKind.GRADIENT, HeroKind.FADE)
-        Tag.DARK_FANTASY -> Kit(ShapeDna(Corner.ROUND, 1.2f, 4), BorderDna(BorderKind.FLOURISH, 1f), RuleKind.GLOW, tx(TextureKind.PARTICLES, 0.7f),
+        Tag.DARK_FANTASY -> Kit(ShapeDna(Corner.ROUND, 1.2f, 4), BorderDna(BorderKind.GLOW, 0.8f), RuleKind.GLOW, tx(TextureKind.PARTICLES, 0.7f),
             listOf(o(OrnamentKind.LIGHT_RAYS, 1f, 0.14f), o(OrnamentKind.SPORES, 1f, 0.8f)), TypeDna(FontKind.ROMAN, FontKind.DEFAULT, 700, 0.03f), TabKind.PILL, ProgressKind.GLOW, SurfaceKind.GLASS, HeroKind.FADE)
         Tag.SAMURAI -> Kit(ShapeDna(Corner.SQUARE, 1f, 3), BorderDna(BorderKind.DOUBLE, 0.8f), RuleKind.BRUSH, tx(TextureKind.PAPER, 0.8f, true),
             listOf(o(OrnamentKind.GINKGO, 0.8f, 0.6f), o(OrnamentKind.BRUSH_SWEEP, 1f, 0.55f), o(OrnamentKind.SEIGAIHA_BAND, 1f, 0.35f)), TypeDna(FontKind.SANS, FontKind.SERIF, 500, 0.06f), TabKind.UNDERLINE, ProgressKind.BRUSH, SurfaceKind.SOLID, HeroKind.FRAMED)
         Tag.SCIFI -> Kit(ShapeDna(Corner.CUT, 1f, 4), BorderDna(BorderKind.GLOW, 0.8f), RuleKind.TECH, tx(TextureKind.GRID, 0.6f),
             listOf(o(OrnamentKind.CIRCUIT, 1f, 0.3f), o(OrnamentKind.HEX_GRID, 0.8f, 0.14f)), TypeDna(FontKind.TECH, FontKind.DEFAULT, 600, 0.03f), TabKind.CUT, ProgressKind.GLOW, SurfaceKind.GLASS, HeroKind.FADE)
-        Tag.CYBERPUNK -> Kit(ShapeDna(Corner.CUT, 1f, 4), BorderDna(BorderKind.BRACKETS, 1f), RuleKind.TECH, tx(TextureKind.GRID, 0.7f),
+        Tag.CYBERPUNK -> Kit(ShapeDna(Corner.CUT, 1f, 4), BorderDna(BorderKind.SINGLE, 1.4f), RuleKind.TECH, tx(TextureKind.GRID, 0.7f),
             listOf(o(OrnamentKind.CIRCUIT, 1.2f, 0.35f), o(OrnamentKind.SPEED_STRIPES, 0.6f, 0.2f)), TypeDna(FontKind.TECH, FontKind.DEFAULT, 800, 0.03f), TabKind.CUT, ProgressKind.TICKS, SurfaceKind.GLASS, HeroKind.FADE)
         Tag.SPACE -> Kit(ShapeDna(Corner.ROUND, 1.2f, 4), BorderDna(BorderKind.GLOW, 1f), RuleKind.GLOW, tx(TextureKind.STARS, 0.8f),
             listOf(o(OrnamentKind.STARFIELD, 1f, 0.7f), o(OrnamentKind.LIGHT_RAYS, 0.7f, 0.1f)), TypeDna(FontKind.TECH, FontKind.DEFAULT, 500, 0.04f), TabKind.PILL, ProgressKind.GLOW, SurfaceKind.GLASS, HeroKind.FADE)
@@ -63,6 +63,12 @@ object DnaGenerator {
             listOf(o(OrnamentKind.SCRATCHES, 0.8f, 0.3f), o(OrnamentKind.CONTOURS, 1f, 0.18f)), TypeDna(FontKind.DISPLAY, FontKind.DEFAULT, 0, 0.03f), TabKind.UNDERLINE, ProgressKind.TICKS, SurfaceKind.SOLID, HeroKind.FADE)
         Tag.FAMILY -> Kit(ShapeDna(Corner.ROUND, 1.5f, 4), BorderDna(BorderKind.SINGLE, 1f), RuleKind.WAVE, tx(TextureKind.NONE, 0f),
             listOf(o(OrnamentKind.SPORES, 1f, 0.7f)), TypeDna(FontKind.SANS, FontKind.DEFAULT, 800, 0f), TabKind.PILL, ProgressKind.BAR, SurfaceKind.GRADIENT, HeroKind.FADE)
+        Tag.SOULSLIKE -> Kit(ShapeDna(Corner.SQUARE, 1f, 3), BorderDna(BorderKind.DOUBLE, 0.8f), RuleKind.DIAMOND, tx(TextureKind.NONE, 0f),
+            listOf(o(OrnamentKind.LIGHT_RAYS, 1f, 0.12f), o(OrnamentKind.SPORES, 0.8f, 0.6f)), TypeDna(FontKind.ROMAN, FontKind.DEFAULT, 600, 0.03f), TabKind.UNDERLINE, ProgressKind.BAR, SurfaceKind.SOLID, HeroKind.FADE)
+        Tag.MYTHIC -> Kit(ShapeDna(Corner.SQUARE, 1f, 2), BorderDna(BorderKind.SINGLE, 1.2f), RuleKind.RUNIC, tx(TextureKind.PAPER, 0.6f),
+            listOf(o(OrnamentKind.RUNES, 1f, 0.32f), o(OrnamentKind.LIGHT_RAYS, 0.7f, 0.10f)), TypeDna(FontKind.ROMAN, FontKind.DEFAULT, 700, 0.03f), TabKind.CUT, ProgressKind.TICKS, SurfaceKind.SOLID, HeroKind.FADE)
+        Tag.ACTION -> Kit(ShapeDna(Corner.CUT, 0.9f, 4), BorderDna(BorderKind.SINGLE, 1.2f), RuleKind.STRIPES, tx(TextureKind.NONE, 0f),
+            listOf(o(OrnamentKind.SCRATCHES, 0.8f, 0.3f), o(OrnamentKind.LIGHT_RAYS, 0.6f, 0.12f)), TypeDna(FontKind.DISPLAY, FontKind.DEFAULT, 0, 0.03f), TabKind.CUT, ProgressKind.TICKS, SurfaceKind.SOLID, HeroKind.FADE)
         Tag.NAUTICAL -> Kit(ShapeDna(Corner.ROUND, 1.1f, 4), BorderDna(BorderKind.SINGLE, 1f), RuleKind.WAVE, tx(TextureKind.NONE, 0f),
             listOf(o(OrnamentKind.WAVES, 1f, 0.35f)), TypeDna(FontKind.ROMAN, FontKind.DEFAULT, 600, 0.03f), TabKind.UNDERLINE, ProgressKind.BAR, SurfaceKind.GRADIENT, HeroKind.FADE)
     }
@@ -84,7 +90,7 @@ object DnaGenerator {
             !sure -> BorderDna()
             paper >= 0.5f -> BorderDna(BorderKind.DOUBLE, 0.8f)
             glowy >= 0.5f -> BorderDna(BorderKind.GLOW, 1f)
-            angular >= 0.5f -> BorderDna(BorderKind.BRACKETS, 1f)
+            angular >= 0.5f -> BorderDna(BorderKind.SINGLE, 1.4f)
             mini >= 0.5f -> BorderDna(BorderKind.SINGLE, 0.75f)
             else -> BorderDna()
         }
@@ -133,7 +139,9 @@ object DnaGenerator {
         val progress = when { !sure -> ProgressKind.BAR; paper >= 0.5f -> ProgressKind.BRUSH; glowy >= 0.5f -> ProgressKind.GLOW; angular >= 0.5f -> ProgressKind.TICKS; else -> ProgressKind.BAR }
         var dna = Dna(corner, border, rule, surface, texture, ornaments, type, spacing, hero, tabs, progress)
         // the game's type decides the component language and the motifs; the artwork keeps the colours, the mood and the spacing
-        val ranked = tags.entries.sortedByDescending { it.value }
+        // a setting (samurai, mythology, souls-like ...) is more characteristic than a generic genre, so it wins close calls
+        val setting = setOf(Tag.SAMURAI, Tag.MYTHIC, Tag.SOULSLIKE, Tag.DARK_FANTASY, Tag.CYBERPUNK, Tag.SPACE, Tag.NAUTICAL, Tag.PIXEL)
+        val ranked = tags.entries.sortedByDescending { it.value + (if (it.key in setting) 0.1f else 0f) }
         val primary = ranked.firstOrNull()?.takeIf { it.value >= 0.5f }
         if (primary != null) {
             val k = kit(primary.key)

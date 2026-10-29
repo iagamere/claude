@@ -59,7 +59,7 @@ class GenreTest {
             assertTrue("$t differs from artwork-only: ${Dna.distance(g.dna, none.dna)}", g.dna != none.dna)
             sigs.add(g.dna.signature()); designs.add(g.dna)
         }
-        assertTrue("distinct designs: ${sigs.size}", sigs.size >= 16)
+        assertTrue("distinct designs: ${sigs.size}", sigs.size >= 19)
         var sum = 0.0; var n = 0; var minD = 1.0
         for (i in designs.indices) for (j in i + 1 until designs.size) { val d = Dna.distance(designs[i], designs[j]); sum += d; n++; minD = minOf(minD, d) }
         assertTrue("average distance ${sum / n}", sum / n >= 0.55); assertTrue("closest pair $minD", minD >= 0.1)
@@ -86,5 +86,22 @@ class GenreTest {
     }
     @Test fun typeNeverBreaksTheOrnamentBudget() {
         for (t in Tag.values()) { val d = DnaGenerator.generate(ghostArt, mapOf(t to 0.9f, Tag.ADVENTURE to 0.6f, Tag.FAMILY to 0.55f)).dna; assertTrue(d.ornaments.size <= 3); assertTrue(d.ornaments.map { it.kind }.distinct().size == d.ornaments.size) }
+    }
+
+    @Test fun eldenRingStyleGamesGetTheirOwnAusterineProfile() {
+        val entry = "Elden Ring is a 2022 action role-playing game developed by FromSoftware and published by Bandai Namco Entertainment. The game, directed by Hidetaka Miyazaki, with worldbuilding provided by fantasy writer George R. R. Martin, was released for PlayStation 4. Set in the Lands Between, players control a customizable player character."
+        val tags = GenreClassifier.fromText(entry)
+        assertTrue(tags[Tag.SOULSLIKE]!! >= 0.8f); assertTrue(tags[Tag.FANTASY]!! >= 0.5f)
+        val d = DnaGenerator.generate(ghostArt, GenreClassifier.merge(tags)).dna
+        assertEquals(Corner.SQUARE, d.shape.corner); assertEquals(BorderKind.DOUBLE, d.border.kind); assertEquals(RuleKind.DIAMOND, d.rule)
+        assertEquals(TabKind.UNDERLINE, d.tabs); assertEquals(HeroKind.FADE, d.hero); assertEquals(SurfaceKind.SOLID, d.surface); assertEquals(FontKind.ROMAN, d.type.title)
+        val darkFantasy = DnaGenerator.generate(ghostArt, mapOf(Tag.DARK_FANTASY to 0.9f)).dna; val samurai = DnaGenerator.generate(ghostArt, mapOf(Tag.SAMURAI to 0.9f)).dna
+        assertTrue("vs dark fantasy ${Dna.distance(d, darkFantasy)}", Dna.distance(d, darkFantasy) >= 0.5); assertTrue("vs samurai ${Dna.distance(d, samurai)}", Dna.distance(d, samurai) >= 0.5)
+    }
+    @Test fun mythologyGamesGetRunesAndASettingWinsOverAGenericGenre() {
+        val tags = GenreClassifier.merge(GenreClassifier.fromText("God of War is a 2018 action-adventure game. It is rooted in Norse mythology."), GenreClassifier.fromGenreLabels(listOf("hack and slash")))
+        assertTrue(Tag.MYTHIC in tags && Tag.ACTION in tags)
+        val d = DnaGenerator.generate(ghostArt, tags).dna
+        assertEquals(RuleKind.RUNIC, d.rule); assertTrue(d.ornaments.any { it.kind == OrnamentKind.RUNES }); assertEquals(Corner.SQUARE, d.shape.corner)
     }
 }

@@ -10,22 +10,26 @@ import org.json.JSONObject
 data class GameFacts(
     val title: String, val summary: String, val genres: List<String>, val modes: List<String>, val developers: List<String>, val publishers: List<String>,
     val platforms: List<String>, val ratings: List<String>, val series: String?, val release: String?, val pageUrl: String?, val lang: String, val fetchedAt: Long = 0L,
+    /** detected game types, encoded by [GenreClassifier.encode]: lets the theme follow the same lookup */
+    val tags: String = "",
 ) {
     fun isEmpty() = summary.isBlank() && genres.isEmpty() && developers.isEmpty() && publishers.isEmpty() && release == null && ratings.isEmpty()
 
     fun toJson(): JSONObject = JSONObject().put("t", title).put("s", summary).put("g", JSONArray(genres)).put("m", JSONArray(modes)).put("d", JSONArray(developers))
         .put("p", JSONArray(publishers)).put("pl", JSONArray(platforms)).put("r", JSONArray(ratings)).put("se", series ?: JSONObject.NULL).put("rel", release ?: JSONObject.NULL)
-        .put("u", pageUrl ?: JSONObject.NULL).put("l", lang).put("ts", fetchedAt)
+        .put("u", pageUrl ?: JSONObject.NULL).put("l", lang).put("ts", fetchedAt).put("tg", tags)
 
     companion object {
         private fun list(o: JSONObject, k: String): List<String> = o.optJSONArray(k)?.let { a -> (0 until minOf(a.length(), 12)).map { a.optString(it) }.filter { it.isNotBlank() } } ?: emptyList()
+        /** Android's org.json turns a JSON null into the text "null" in optString, so null is tested explicitly. */
+        private fun str(o: JSONObject, k: String): String? = if (o.isNull(k)) null else o.optString(k, "").trim().takeIf { it.isNotEmpty() && it != "null" }
         fun fromJson(o: JSONObject): GameFacts = GameFacts(o.optString("t"), o.optString("s"), list(o, "g"), list(o, "m"), list(o, "d"), list(o, "p"), list(o, "pl"), list(o, "r"),
-            o.optString("se", "").ifBlank { null }, o.optString("rel", "").ifBlank { null }, o.optString("u", "").ifBlank { null }, o.optString("l", "en"), o.optLong("ts"))
+            str(o, "se"), str(o, "rel"), str(o, "u"), o.optString("l", "en"), o.optLong("ts"), str(o, "tg") ?: "")
     }
 }
 
 object GameFactsParser {
-    class Page(val title: String, val extract: String, val qid: String?, val arTitle: String?)
+    class Page(val title: String, val extract: String, val qid: String?, val arTitle: String?, val index: Int = 0)
     class Claims(val byProperty: Map<String, List<String>>, val releaseDates: List<String>) {
         fun ids(p: String) = byProperty[p].orEmpty()
         fun allIds(): List<String> = byProperty.values.flatten().distinct()
@@ -36,14 +40,46 @@ object GameFactsParser {
     const val ESRB = "P852"; const val PEGI = "P908"; const val SERIES = "P179"; const val RELEASE = "P577"
     private val itemProps = listOf(GENRE, MODE, DEVELOPER, PUBLISHER, PLATFORM, ESRB, PEGI, SERIES)
 
-    /** Wikipedia `generator=search` response (extracts + pageprops + langlinks) -> the single best page, or null. */
-    fun parsePage(body: String): Page? {
-        val pages = JSONObject(body).optJSONObject("query")?.optJSONObject("pages") ?: return null
-        val keys = pages.keys(); if (!keys.hasNext()) return null
-        val p = pages.getJSONObject(keys.next())
+    private fun pageOf(p: JSONObject): Page {
         val qid = p.optJSONObject("pageprops")?.optString("wikibase_item", "")?.takeIf { it.startsWith("Q") }
         val ar = p.optJSONArray("langlinks")?.let { a -> (0 until a.length()).map { a.getJSONObject(it) }.firstOrNull { it.optString("lang") == "ar" }?.optString("*", "")?.ifBlank { null } }
-        return Page(p.optString("title"), p.optString("extract"), qid, ar)
+        return Page(p.optString("title"), p.optString("extract"), qid, ar, p.optInt("index", 0))
+    }
+    /** Wikipedia `generator=search` response (extracts + pageprops + langlinks) -> every result page, best search rank first. */
+    fun parsePages(body: String): List<Page> {
+        val pages = JSONObject(body).optJSONObject("query")?.optJSONObject("pages") ?: return emptyList()
+        return pages.keys().asSequence().map { pageOf(pages.getJSONObject(it)) }.sortedBy { if (it.index == 0) 99 else it.index }.toList()
+    }
+    /** The first result page, or null. */
+    fun parsePage(body: String): Page? = parsePages(body).firstOrNull()
+
+    private val seriesCue = Regex("(?i)\\b(video game series|game series|media franchise|video game franchise|franchise|series of (?:\\w+ ){0,3}games)\\b")
+    private val remakeCue = Regex("(?i)remaster|collection|\\bhd\\b|definitive|trilogy|anniversary")
+    private fun norm(s: String) = s.lowercase().replace(Regex("\\s*\\([^)]*\\)"), " ").replace(Regex("[^\\p{L}\\p{N}]+"), " ").trim()
+
+    /**
+     * Search results of "<title> video game" can be the series, an older game of the series or a later one. The page about THIS game is chosen by:
+     * the words of the title in the page title (an exact match counts most), an article that is not about a series / franchise, and a release year in
+     * the console's lifetime (2013 or later) unless the title says remaster / collection; the search rank breaks ties.
+     */
+    fun pick(pages: List<Page>, title: String): Page? {
+        val toks = norm(title).split(' ').filter { it.length >= 3 }
+        if (toks.isEmpty()) return null
+        val base = norm(title); val remake = remakeCue.containsMatchIn(title)
+        var best: Page? = null; var bestScore = 0.5
+        pages.forEachIndexed { i, p ->
+            if (!p.extract.contains("game", ignoreCase = true)) return@forEachIndexed
+            val pt = p.title.lowercase(); val hit = toks.count { pt.contains(it) }
+            if (hit * 2 < toks.size) return@forEachIndexed
+            var s = if (hit == toks.size) 3.0 else 1.0
+            if (norm(p.title) == base) s += 2.0
+            val first = p.extract.substringBefore('.').take(300)
+            if (seriesCue.containsMatchIn(first)) s -= 6.0
+            Regex("\\b(19|20)\\d{2}\\b").find(first)?.value?.toIntOrNull()?.let { y -> s += if (y in 2013..2027) 3.0 else if (remake) 0.0 else -3.0 }
+            s -= i * 0.3
+            if (s > bestScore) { bestScore = s; best = p }
+        }
+        return best
     }
 
     /** Arabic (or any) extract response: the first page's extract. */
@@ -110,11 +146,12 @@ object GameFactsParser {
     }
 
     /** Combines everything into the facts shown to the user. */
-    fun build(page: Page, claims: Claims, labels: Map<String, String>, summarySource: String, lang: String, pageUrl: String?, now: Long): GameFacts {
+    fun build(page: Page, claims: Claims, labels: Map<String, String>, summarySource: String, lang: String, pageUrl: String?, now: Long, labelsEn: Map<String, String> = labels): GameFacts {
         fun names(p: String, limit: Int = 6) = claims.ids(p).mapNotNull { labels[it] }.distinct().take(limit)
         fun rating(p: String, tag: String) = claims.ids(p).mapNotNull { labels[it] }.map { if (it.contains(tag, ignoreCase = true)) it else "$tag $it" }.distinct().take(2)
         val platforms = names(PLATFORM, 20).sortedBy { if (it.contains("PlayStation", true) || it.contains("بلاي")) 0 else 1 }.take(7)
         return GameFacts(page.title, premise(summarySource), names(GENRE), names(MODE, 4), names(DEVELOPER, 3), names(PUBLISHER, 3), platforms,
-            rating(ESRB, "ESRB") + rating(PEGI, "PEGI"), names(SERIES, 1).firstOrNull(), earliest(claims.releaseDates), pageUrl, lang, now)
+            rating(ESRB, "ESRB") + rating(PEGI, "PEGI"), names(SERIES, 1).firstOrNull(), earliest(claims.releaseDates), pageUrl, lang, now,
+            GenreClassifier.encode(GenreClassifier.merge(GenreClassifier.fromText(page.extract), GenreClassifier.fromGenreLabels(claims.ids(GENRE).mapNotNull { labelsEn[it] }))))
     }
 }

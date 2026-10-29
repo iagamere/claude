@@ -164,6 +164,23 @@ private fun hexGridPath(w: Float, h: Float, r: Float, cap: Int, x0: Float = 0f, 
     return p
 }
 
+/** Simplified rune-like glyphs made of straight strokes (x1,y1,x2,y2 groups in a 0..1 box): carved-stone ornament for mythology games. */
+private val RUNE_GLYPHS = listOf(
+    floatArrayOf(.3f, 0f, .3f, 1f, .3f, .35f, .8f, .05f, .3f, .65f, .8f, .35f),
+    floatArrayOf(.2f, 1f, .2f, 0f, .2f, 0f, .8f, .25f, .8f, .25f, .8f, 1f),
+    floatArrayOf(.3f, 0f, .3f, 1f, .3f, .2f, .75f, .5f, .75f, .5f, .3f, .8f),
+    floatArrayOf(.3f, 0f, .3f, 1f, .3f, .1f, .8f, .35f, .3f, .4f, .8f, .65f),
+    floatArrayOf(.3f, 0f, .3f, 1f, .3f, 0f, .75f, .25f, .75f, .25f, .3f, .5f, .3f, .5f, .8f, 1f),
+    floatArrayOf(.75f, .1f, .3f, .5f, .3f, .5f, .75f, .9f),
+    floatArrayOf(.15f, .05f, .85f, .95f, .85f, .05f, .15f, .95f),
+    floatArrayOf(.5f, 0f, .5f, 1f, .15f, .35f, .5f, 0f, .5f, 0f, .85f, .35f),
+    floatArrayOf(.3f, 0f, .3f, 1f, .3f, 0f, .75f, .25f, .75f, .25f, .3f, .5f, .3f, .5f, .75f, .75f, .75f, .75f, .3f, 1f),
+)
+private fun DrawScope.drawRune(g: FloatArray, x: Float, y: Float, s: Float, color: Color, sw: Float) {
+    var i = 0
+    while (i + 3 < g.size) { drawLine(color, Offset(x + g[i] * s * 0.7f, y + g[i + 1] * s), Offset(x + g[i + 2] * s * 0.7f, y + g[i + 3] * s), sw, StrokeCap.Round); i += 4 }
+}
+
 /** Static texture behind the content (paper grain, drifting particles, technical grid). Hard-capped element counts. [card] = this is a card, not the page. */
 fun Modifier.dnaTexture(d: Dna, ink: Color, accent: Color, card: Boolean = false): Modifier {
     val tx = d.texture
@@ -376,6 +393,12 @@ fun Modifier.dnaOrnaments(d: Dna, accent: Color, only: Set<OrnamentKind>? = null
                     }
                     draws.add { drawPath(wp, col, style = Stroke(1.4f * px)) }
                 }
+                OrnamentKind.RUNES -> {
+                    val n = (6 * o.density).toInt().coerceIn(3, 8); val sz = 15f * px; val gap = 24f * px
+                    val ids = IntArray(n) { rnd.nextInt(RUNE_GLYPHS.size) }
+                    val x0 = maxOf(8f * px, w - 18f * px - n * gap); val y0 = 16f * px
+                    draws.add { for (i in 0 until n) drawRune(RUNE_GLYPHS[ids[i]], x0 + i * gap, y0, sz, col, 1.4f * px) }
+                }
                 OrnamentKind.LIGHT_RAYS -> {
                     val brush = Brush.verticalGradient(listOf(col, Color.Transparent), 0f, h)
                     val paths = (0 until 3).map { i ->
@@ -406,24 +429,8 @@ fun Modifier.dnaBorder(d: Dna, line: Color, glow: Color, shape: Shape): Modifier
                 val inner = Size(size.width - 2 * inset, size.height - 2 * inset)
                 if (inner.width > 0f && inner.height > 0f) translate(inset, inset) { drawOutline(shape.createOutline(inner, layoutDirection, this), line.copy(alpha = line.alpha * 0.55f), style = Stroke(w)) }
             }
-            BorderKind.BRACKETS -> {
-                drawOutline(outline, line.copy(alpha = line.alpha * 0.45f), style = Stroke(w * 2f))
-                val len = 14f * px; val i = 3f * px; val sw = 1.6f * px; val x1 = size.width - i; val y1 = size.height - i
-                drawLine(glow, Offset(i, i), Offset(i + len, i), sw); drawLine(glow, Offset(i, i), Offset(i, i + len), sw)
-                drawLine(glow, Offset(x1, i), Offset(x1 - len, i), sw); drawLine(glow, Offset(x1, i), Offset(x1, i + len), sw)
-                drawLine(glow, Offset(i, y1), Offset(i + len, y1), sw); drawLine(glow, Offset(i, y1), Offset(i, y1 - len), sw)
-                drawLine(glow, Offset(x1, y1), Offset(x1 - len, y1), sw); drawLine(glow, Offset(x1, y1), Offset(x1, y1 - len), sw)
-            }
-            BorderKind.FLOURISH -> {
-                drawOutline(outline, line.copy(alpha = line.alpha * 0.5f), style = Stroke(w * 2f))
-                val i = 3f * px; val len = 20f * px; val rr = 7f * px; val x1 = size.width - i; val y1 = size.height - i
-                fun curl(x: Float, y: Float, sx: Float, sy: Float) {
-                    val p = Path(); p.moveTo(x, y + sy * len); p.lineTo(x, y + sy * rr); p.quadraticBezierTo(x, y, x + sx * rr, y); p.lineTo(x + sx * len, y)
-                    drawPath(p, glow, style = Stroke(1.5f * px, cap = StrokeCap.Round))
-                    drawCircle(glow, 1.7f * px, Offset(x + sx * len, y)); drawCircle(glow, 1.7f * px, Offset(x, y + sy * len))
-                }
-                curl(i, i, 1f, 1f); curl(x1, i, -1f, 1f); curl(i, y1, 1f, -1f); curl(x1, y1, -1f, -1f)
-            }
+            BorderKind.BRACKETS -> drawOutline(outline, line, style = Stroke(w * 2f))      // kept for old files; corner marks were removed (they cluttered every card)
+            BorderKind.FLOURISH -> drawOutline(outline, line, style = Stroke(w * 2f))
             BorderKind.GLOW -> {
                 drawOutline(outline, glow.copy(alpha = 0.05f), style = Stroke(w * 10f))
                 drawOutline(outline, glow.copy(alpha = 0.10f), style = Stroke(w * 6f))
@@ -452,7 +459,7 @@ fun Modifier.dnaBorder(d: Dna, line: Color, glow: Color, shape: Shape): Modifier
 @Composable fun DnaRule(modifier: Modifier = Modifier, subtle: Boolean = false) {
     val d = LocalDna.current; val cs = MaterialTheme.colorScheme; val kind = if (subtle) RuleKind.HAIRLINE else d.rule
     val line = cs.outlineVariant; val acc = cs.primary
-    val h = when (kind) { RuleKind.HAIRLINE -> 1.dp; RuleKind.BRUSH -> 8.dp; RuleKind.DIAMOND -> 10.dp; RuleKind.GLOW -> 9.dp; RuleKind.TECH -> 8.dp; RuleKind.STRIPES -> 10.dp; RuleKind.WAVE -> 10.dp; RuleKind.PIXEL -> 8.dp; RuleKind.PITCH -> 12.dp }
+    val h = when (kind) { RuleKind.HAIRLINE -> 1.dp; RuleKind.BRUSH -> 8.dp; RuleKind.DIAMOND -> 10.dp; RuleKind.GLOW -> 9.dp; RuleKind.TECH -> 8.dp; RuleKind.STRIPES -> 10.dp; RuleKind.WAVE -> 10.dp; RuleKind.PIXEL -> 8.dp; RuleKind.PITCH -> 12.dp; RuleKind.RUNIC -> 10.dp }
     Canvas(modifier.height(h)) {
         val w = size.width; val ph = size.height; val px = density; val cy = ph / 2f
         when (kind) {
@@ -487,6 +494,11 @@ fun Modifier.dnaBorder(d: Dna, line: Color, glow: Color, shape: Shape): Modifier
             RuleKind.PIXEL -> {
                 val n = (w / (9f * px)).toInt().coerceAtMost(60)
                 for (i in 0 until n) drawRect((if (i < 4) acc else line).copy(alpha = 1f - i.toFloat() / n), Offset(i * 9f * px, cy - 2f * px), Size(4f * px, 4f * px))
+            }
+            RuleKind.RUNIC -> {
+                val s = ph * 0.7f
+                for (i in 0..2) drawRune(RUNE_GLYPHS[(i * 3 + 1) % RUNE_GLYPHS.size], i * 16f * px, cy - s / 2f, s, acc, 1.2f * px)
+                drawRect(Brush.horizontalGradient(listOf(line, Color.Transparent), 54f * px, w), Offset(54f * px, cy - 0.5f * px), Size(w - 54f * px, px))
             }
             RuleKind.PITCH -> {
                 val r0 = 4.5f * px; val cx = 14f * px
