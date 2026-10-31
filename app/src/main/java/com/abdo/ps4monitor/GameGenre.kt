@@ -1,7 +1,12 @@
 package com.abdo.ps4monitor
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -39,6 +44,11 @@ object GameWebInfo {
         for (l in listOf("en", "ar")) cached(titleId, l)?.let { return GenreClassifier.decode(it.tags) }
         return if (knownMissing(titleId, "en") || knownMissing(titleId, "ar")) emptyMap() else null
     }
+    // the game page (rememberGameTheme) and the Details tab (GameAbout) can both ask for the same game+language at once; a single
+    // in-flight request is shared instead of firing the lookup twice, which matters most on a slow connection.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val inFlight = ConcurrentHashMap<String, Deferred<FetchResult>>()
+
     private fun markMissing(titleId: String, lang: String) { runCatching { Store.sp.edit().putString(key(titleId, lang), JSONObject().put("none", System.currentTimeMillis()).toString()).apply() } }
 
     private fun get(url: String): String {
@@ -47,7 +57,13 @@ object GameWebInfo {
     }
     private fun enc(s: String) = URLEncoder.encode(s.replace(' ', '_'), "UTF-8")
 
-    suspend fun fetch(titleId: String, title: String, lang: String): FetchResult = withContext(Dispatchers.IO) {
+    suspend fun fetch(titleId: String, title: String, lang: String): FetchResult {
+        val k = key(titleId, lang)
+        val d = inFlight.computeIfAbsent(k) { scope.async { fetchNow(titleId, title, lang) } }
+        return try { d.await() } finally { inFlight.remove(k, d) }
+    }
+
+    private suspend fun fetchNow(titleId: String, title: String, lang: String): FetchResult = withContext(Dispatchers.IO) {
         val clean = GenreClassifier.cleanTitle(title)
         try {
             val q = URLEncoder.encode("$clean video game", "UTF-8")

@@ -93,11 +93,14 @@ import kotlinx.coroutines.withContext
  * The game's artwork (banner + cover) -> a complete design (colours for both appearances + shape / border / divider / texture / ornament /
  * typography / composition layers). Analysed locally and off the main thread; reused from the cache while the artwork is unchanged.
  */
+/** Artwork already analysed this session: re-opening a game (the single most common action in this screen) skips the bitmap work entirely. */
+private val artCache = java.util.concurrent.ConcurrentHashMap<String, Triple<List<Raster>, List<Float>, Long>>()
+
 @Composable private fun rememberGameTheme(titleId: String, title: String, icon: Bitmap?, banner: Bitmap?): AppTheme? {
     val online = ThemeEngine.onlineGenre
     val t by produceState<AppTheme?>(ThemeEngine.cachedGame(titleId), titleId, icon, banner, online) {
         if (icon == null && banner == null) return@produceState
-        val built = withContext(Dispatchers.Default) {
+        val built = artCache[titleId] ?: withContext(Dispatchers.Default) {
             runCatching {
                 val rs = ArrayList<Raster>(); val ws = ArrayList<Float>()
                 fun add(b: Bitmap?, w: Float) {
@@ -109,7 +112,7 @@ import kotlinx.coroutines.withContext
                     rs.add(Raster(sm.width, sm.height, px)); ws.add(w)
                 }
                 add(banner, 0.6f); add(icon, 0.4f)
-                if (rs.isEmpty()) null else Triple(rs, ws, ArtAnalyzer.fingerprint(rs))
+                if (rs.isEmpty()) null else Triple(rs, ws, ArtAnalyzer.fingerprint(rs)).also { artCache[titleId] = it }
             }.getOrNull()
         } ?: return@produceState
         fun design(tags: Map<Tag, Float>): AppTheme? = runCatching {
